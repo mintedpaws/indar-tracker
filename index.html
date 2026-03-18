@@ -229,29 +229,51 @@ tr:hover td{background:rgba(168,85,247,0.05)}
 @keyframes slideUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
 
 @media(max-width:768px){
-  .topbar{height:auto;flex-wrap:wrap;padding:.75rem 1rem;gap:.5rem}
-  .topbar-brand{font-size:14px}
-  .topbar-nav{margin-left:0;order:3;width:100%;justify-content:center}
-  .nav-btn{font-size:12px;padding:5px 10px;flex:1;text-align:center}
-  .topbar-center{position:static;transform:none;order:2}
-  .topbar-center .btn{padding:8px 16px;font-size:13px;width:100%}
-  .topbar-right{order:1;gap:6px;margin-left:auto}
+  /* Fix overflow */
+  html,body{overflow-x:hidden;width:100%}
+
+  /* Topbar — stacked app-style */
+  .topbar{height:auto;flex-wrap:wrap;padding:.6rem .75rem;gap:.4rem;position:sticky;top:0;z-index:50}
+  .topbar-brand{font-size:13px;order:1}
+  .topbar-right{order:2;margin-left:auto;gap:6px}
+  .topbar-right .btn-sm{font-size:11px;padding:4px 8px}
   .search-wrap{display:none}
-  .dash-grid{grid-template-columns:1fr}
-  .dash-charts{grid-template-columns:1fr}
+  .topbar-nav{order:4;width:100%;display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;margin-left:0}
+  .nav-btn{font-size:12px;padding:7px 4px;text-align:center;border-radius:var(--radius);background:var(--bg3);border:0.5px solid var(--border)}
+  .nav-btn.on{background:var(--accent-dim);color:var(--accent-bright)}
+  .topbar-center{order:3;width:100%;position:static;transform:none}
+  .topbar-center .btn{width:100%;padding:10px;font-size:14px;border-radius:var(--radius);margin:2px 0}
+
+  /* Dashboard */
+  .dashboard{padding:.75rem}
+  .dash-grid{grid-template-columns:1fr;gap:8px}
+  .dash-stat{padding:1rem}
   .dash-stat-num{font-size:28px}
-  .rep-grid{grid-template-columns:1fr 1fr}
-  .form-grid-2,.form-grid-3,.form-grid-4{grid-template-columns:1fr}
-  .detail-grid{grid-template-columns:1fr}
-  .modal{max-height:95vh;border-radius:var(--radius-lg)}
+  .dash-charts{grid-template-columns:1fr;gap:8px}
+  .rep-grid{grid-template-columns:1fr 1fr;gap:8px}
+
+  /* Modal — full screen on mobile */
+  .modal-overlay{padding:0;align-items:flex-end}
+  .modal{max-width:100%;width:100%;max-height:92vh;border-radius:var(--radius-lg) var(--radius-lg) 0 0;animation:slideUp .25s ease}
   .modal-body{padding:1rem}
-  .modal-header{padding:1rem}
+  .modal-header{padding:.875rem 1rem}
   .modal-footer{padding:.75rem 1rem}
-  .list-view{padding:1rem}
-  .filter-pills{gap:4px;flex-wrap:wrap}
-  .fpill{font-size:10px;padding:3px 8px}
-  .kanban-col{width:210px}
-  .dashboard{padding:1rem}
+
+  /* Forms — all single column, full width */
+  .form-grid-2,.form-grid-3,.form-grid-4{grid-template-columns:1fr;gap:8px}
+  .detail-grid{grid-template-columns:1fr;gap:8px}
+  .form-section{margin-bottom:1rem}
+  input,select,textarea{font-size:16px}
+
+  /* List */
+  .list-view{padding:.75rem}
+  .list-toolbar{flex-direction:column;align-items:stretch;gap:6px}
+  .filter-pills{gap:4px;overflow-x:auto;flex-wrap:nowrap;padding-bottom:4px}
+  .fpill{font-size:10px;padding:4px 10px;white-space:nowrap}
+
+  /* Kanban */
+  .kanban-container{padding:.75rem}
+  .kanban-col{width:200px}
 }
 </style>
 </head>
