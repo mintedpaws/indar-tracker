@@ -229,10 +229,29 @@ tr:hover td{background:rgba(168,85,247,0.05)}
 @keyframes slideUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
 
 @media(max-width:768px){
-  .dash-grid{grid-template-columns:1fr 1fr}
+  .topbar{height:auto;flex-wrap:wrap;padding:.75rem 1rem;gap:.5rem}
+  .topbar-brand{font-size:14px}
+  .topbar-nav{margin-left:0;order:3;width:100%;justify-content:center}
+  .nav-btn{font-size:12px;padding:5px 10px;flex:1;text-align:center}
+  .topbar-center{position:static;transform:none;order:2}
+  .topbar-center .btn{padding:8px 16px;font-size:13px;width:100%}
+  .topbar-right{order:1;gap:6px;margin-left:auto}
+  .search-wrap{display:none}
+  .dash-grid{grid-template-columns:1fr}
   .dash-charts{grid-template-columns:1fr}
+  .dash-stat-num{font-size:28px}
+  .rep-grid{grid-template-columns:1fr 1fr}
   .form-grid-2,.form-grid-3,.form-grid-4{grid-template-columns:1fr}
   .detail-grid{grid-template-columns:1fr}
+  .modal{max-height:95vh;border-radius:var(--radius-lg)}
+  .modal-body{padding:1rem}
+  .modal-header{padding:1rem}
+  .modal-footer{padding:.75rem 1rem}
+  .list-view{padding:1rem}
+  .filter-pills{gap:4px;flex-wrap:wrap}
+  .fpill{font-size:10px;padding:3px 8px}
+  .kanban-col{width:210px}
+  .dashboard{padding:1rem}
 }
 </style>
 </head>
