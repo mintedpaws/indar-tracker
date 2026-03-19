@@ -905,7 +905,7 @@ function openLead(id) {
     </div>
     <button class="btn btn-ghost btn-sm" onclick="closeDetail()">✕</button>`;
   renderDetailBody(l);
-  document.getElementById("detail-footer").innerHTML=`<button class="btn btn-sm" onclick="closeDetail()" style="margin-left:auto">Close</button>`;
+  document.getElementById("detail-footer").innerHTML=`<button class="btn btn-sm btn-danger" onclick="confirmDelete('${l.id}')">Delete lead</button><button class="btn btn-sm" onclick="closeDetail()" style="margin-left:auto">Close</button>`;
   document.getElementById("detail-modal").classList.add("on");
 }
 
@@ -964,11 +964,6 @@ function renderDetailBody(l) {
     </div>
 
     <div id="dtab-overview">
-      <!-- Quick actions -->
-      <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
-        <button class="btn btn-green btn-sm" onclick="madeContactModal('${l.id}')">📞 Made contact</button>
-      </div>
-
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
         <div class="fg"><label style="font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;display:block;margin-bottom:5px">Stage</label>
           <select style="font-size:12px" onchange="quickUpdateStatus(this.value)">
@@ -1147,6 +1142,15 @@ async function removeInvoice(invId) {
   switchTab(document.querySelectorAll(".modal-tab")[0],"dtab-overview");
 }
 function closeDetail(){document.getElementById("detail-modal").classList.remove("on");editId=null;}
+async function confirmDelete(id) {
+  const l=leads.find(x=>x.id===id); if(!l) return;
+  if(confirm(`Delete ${l.firstName} ${l.lastName||""} at ${l.company}? This cannot be undone.`)){
+    await dbDeleteLead(id);
+    leads=leads.filter(x=>x.id!==id);
+    closeDetail(); render();
+    showToast("Lead deleted",false,false);
+  }
+}
 
 // ---- ADD LEAD ----
 function openAddLead(){populateRepSelects();document.getElementById("add-modal").classList.add("on");}
