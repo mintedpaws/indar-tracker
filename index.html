@@ -1217,7 +1217,7 @@ function dropFile(e){e.preventDefault();document.getElementById("import-drop")?.
 function handleFileSelect(e){const f=e.target.files[0];if(f)readFile(f);}
 function readFile(f){const r=new FileReader();r.onload=ev=>parseCSV(ev.target.result);r.readAsText(f);}
 function parsePasted(){const t=document.getElementById("import-paste")?.value.trim();if(t)parseCSV(t);}
-const COL_MAP={firstname:"firstName",first_name:"firstName",lastname:"lastName",last_name:"lastName",email:"email",emailaddress:"email",phone:"phone",phonenumber:"phone",mobile:"phone",companyname:"company",company_name:"company",company:"company",vertical_label:"vertical",vertical:"vertical",industry:"vertical",title:"title",jobtitle:"title",job_title:"title",position:"title",status:"status",leadstatus:"status",stage:"status",rep:"rep",assignedto:"rep",assigned_to:"rep",owner:"rep",salesrep:"rep",followup:"followup",follow_up:"followup",followupdate:"followup",value:"value",dealvalue:"value",deal_value:"value",amount:"value",lead_date:"lead_date",leaddate:"lead_date",last_contact_date:"last_contact_date",lastcontact:"last_contact_date",lastcontactdate:"last_contact_date"};
+const COL_MAP={firstname:"firstName",first_name:"firstName",lastname:"lastName",last_name:"lastName",email:"email",emailaddress:"email",phone:"phone",phonenumber:"phone",mobile:"phone",companyname:"company",company_name:"company",company:"company",vertical_label:"vertical",vertical:"vertical",industry:"vertical",title:"title",jobtitle:"title",job_title:"title",position:"title",status:"status",leadstatus:"status",stage:"status",rep:"rep",assignedto:"rep",assigned_to:"rep",owner:"rep",salesrep:"rep",followup:"followup",follow_up:"followup",followupdate:"followup",value:"value",dealvalue:"value",deal_value:"value",amount:"value",lead_date:"lead_date",leaddate:"lead_date",last_contact_date:"last_contact_date",lastcontact:"last_contact_date",lastcontactdate:"last_contact_date",notes:"notes",note:"notes"};
 function normalizeHeader(h){return COL_MAP[h.toLowerCase().replace(/[\s\-_.]/g,"").trim()]||null;}
 function parseCSV(text) {
   const lines=text.split("\n").map(l=>l.replace(/\r/g,"")).filter(l=>l.trim());
@@ -1269,6 +1269,7 @@ async function doImport() {
   const newLeads=newRows.map(r=>{
     const lead={id:uid(),dateAdded:today(),activity:[],estimates:[],invoices:[],firstName:r.firstName||"",lastName:r.lastName||"",email:r.email||"",phone:r.phone||"",company:r.company||"",vertical:r.vertical||"",title:r.title||"",status:STATUSES.includes(r.status)?r.status:"new",rep:r.rep||"",followup:r.followup||"",value:r.value||"",lead_date:r.lead_date||"",last_contact_date:r.last_contact_date||"",closed_date:"",deal_notes:""};
     addActivity(lead,"created",`Lead imported via CSV${r.rep?" · assigned to "+r.rep:""}`);
+    if(r.notes&&r.notes.trim()) addActivity(lead,"note",r.notes.trim());
     if(r.rep&&!reps.includes(r.rep)) reps.push(r.rep);
     return lead;
   });
