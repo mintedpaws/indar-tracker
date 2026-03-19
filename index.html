@@ -356,10 +356,9 @@ tr:hover td{background:rgba(192,96,255,0.05)}
           <div class="fg"><label>Vertical</label>
             <select id="f-vertical">
               <option value="">Select...</option>
-              <option>Portable Sanitation</option><option>Dumpster Rental</option>
-              <option>Equipment Rental</option><option>Waste Management</option>
-              <option>Construction</option><option>Propane / Oil</option>
-              <option>Field Services</option><option>Home Services</option><option>Other</option>
+              <option>Portable Sanitation</option><option>Equipment Rental</option>
+              <option>Waste Management / Dumpster Rental</option><option>Construction</option>
+              <option>Propane / Oil</option><option>C-Store / Car Wash</option><option>Other</option>
             </select>
           </div>
         </div>
@@ -1004,7 +1003,7 @@ function renderDetailBody(l) {
         <div class="form-grid-2" style="margin-bottom:10px">
           <div class="fg"><label>Vertical</label>
             <select id="e-vertical"><option value="">Select...</option>
-              ${["Portable Sanitation","Dumpster Rental","Equipment Rental","Waste Management","Construction","Propane / Oil","Field Services","Home Services","Other"].map(v=>`<option${l.vertical===v?" selected":""}>${v}</option>`).join("")}
+              ${["Portable Sanitation","Equipment Rental","Waste Management / Dumpster Rental","Construction","Propane / Oil","C-Store / Car Wash","Other"].map(v=>`<option${l.vertical===v?" selected":""}>${v}</option>`).join("")}
             </select></div>
           <div class="fg"><label>Assign rep</label><select id="e-rep">${repOpts}</select></div>
         </div>
