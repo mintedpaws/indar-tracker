@@ -279,9 +279,9 @@ tr:hover td{background:rgba(192,96,255,0.05)}
   <div class="topbar">
     <div class="topbar-brand" onclick="showView('list')" style="cursor:pointer"><span class="frog">🐸</span>Indar Tracker</div>
     <nav class="topbar-nav">
-      <button class="nav-btn" onclick="showView('list')">List</button>
       <button class="nav-btn" onclick="showView('dashboard')">Dashboard</button>
       <button class="nav-btn" onclick="showView('kanban')">Leads View</button>
+      <button class="nav-btn on" onclick="showView('list')">List View</button>
     </nav>
     <div class="topbar-center">
       <button class="btn btn-accent" onclick="openAddLead()" style="padding:10px 32px;font-size:15px;font-weight:700">+ Add lead</button>
@@ -591,7 +591,7 @@ function showView(name) {
   document.querySelectorAll(".panel").forEach(p=>p.classList.remove("on"));
   document.querySelectorAll(".nav-btn").forEach(b=>b.classList.remove("on"));
   document.getElementById("panel-"+name).classList.add("on");
-  [{k:"list",i:0},{k:"dashboard",i:1},{k:"kanban",i:2}].forEach(v=>{if(v.k===name) document.querySelectorAll(".nav-btn")[v.i]?.classList.add("on");});
+  [{k:"dashboard",i:0},{k:"kanban",i:1},{k:"list",i:2}].forEach(v=>{if(v.k===name) document.querySelectorAll(".nav-btn")[v.i]?.classList.add("on");});
   if (name==="dashboard") renderDashboard();
   if (name==="list") renderList();
   if (name==="kanban") renderKanban();
