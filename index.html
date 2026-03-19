@@ -677,9 +677,31 @@ function renderList() {
       <td style="font-size:11px;color:var(--text3)">${l.vertical||"—"}</td>
       <td>${l.rep?`<span style="display:inline-flex;align-items:center;gap:5px"><span style="width:18px;height:18px;border-radius:50%;background:var(--accent-dim);border:1px solid var(--accent);display:inline-flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:var(--accent-bright)">${repInitials(l.rep)}</span><span style="font-size:12px">${l.rep}</span></span>`:'<span style="color:var(--text3);font-size:11px">—</span>'}</td>
       <td><select class="stage-select" style="background:${sc.bg};color:${sc.cl}" onchange="quickUpdateStatusFromList('${l.id}',this.value)" onclick="event.stopPropagation()">${statusOpts}</select></td>
-      <td><span class="${fc}">${l.followup?fmtDate(l.followup):"—"}</span></td>
-      <td><span class="${lcClass}" style="font-size:12px">${l.last_contact_date?fmtDate(l.last_contact_date):"—"}</span></td>
-      <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px;color:var(--text3)">${lastNote?lastNote.text.slice(0,50)+(lastNote.text.length>50?"…":""):"—"}</td>
+      <td onclick="event.stopPropagation()" style="min-width:120px">
+        <input type="date" value="${l.followup||""}" title="Follow-up date"
+          style="font-size:12px;padding:4px 8px;width:auto;min-width:110px;color:${l.followup?(fc==="overdue"?"#fca5a5":fc==="due-soon"?"#fcd34d":"var(--text2)"):"var(--text3)"};background:transparent;border-color:transparent;cursor:pointer"
+          onmouseover="this.style.borderColor='var(--border2)'" onmouseout="this.style.borderColor='transparent'"
+          onchange="inlineUpdate('${l.id}','followup',this.value);this.style.color=this.value?'var(--text2)':'var(--text3)'">
+      </td>
+      <td onclick="event.stopPropagation()" style="min-width:120px">
+        <input type="date" value="${l.last_contact_date||""}" title="Last contact date"
+          style="font-size:12px;padding:4px 8px;width:auto;min-width:110px;color:${l.last_contact_date?(lcClass==="overdue"?"#fca5a5":"var(--text2)"):"var(--text3)"};background:transparent;border-color:transparent;cursor:pointer"
+          onmouseover="this.style.borderColor='var(--border2)'" onmouseout="this.style.borderColor='transparent'"
+          onchange="inlineUpdate('${l.id}','last_contact_date',this.value);this.style.color=this.value?'var(--text2)':'var(--text3)'">
+      </td>
+      <td onclick="event.stopPropagation()" style="max-width:200px" title="Click to add note">
+        <span id="note-display-${l.id}" style="font-size:11px;color:var(--text3);cursor:pointer;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:4px 2px;border-radius:4px"
+          onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background='transparent'"
+          onclick="openInlineNote('${l.id}',this)">${lastNote?lastNote.text.slice(0,50)+(lastNote.text.length>50?"…":""):"+ note"}</span>
+        <div id="note-input-${l.id}" style="display:none;gap:4px">
+          <input id="note-val-${l.id}" placeholder="Add note..." style="font-size:12px;padding:5px 8px"
+            onkeydown="if(event.key==='Enter')saveInlineNote('${l.id}');if(event.key==='Escape')closeInlineNote('${l.id}')">
+          <div style="display:flex;gap:4px;margin-top:4px">
+            <button class="btn btn-accent btn-sm" onclick="saveInlineNote('${l.id}')">Save</button>
+            <button class="btn btn-ghost btn-sm" onclick="closeInlineNote('${l.id}')">✕</button>
+          </div>
+        </div>
+      </td>
       <td style="text-align:right"><button class="btn btn-ghost btn-sm" onclick="openLead('${l.id}')">View</button></td>
     </tr>`;
   }).join("");
@@ -690,6 +712,35 @@ async function quickUpdateStatusFromList(id, value) {
   const old=STATUS_CFG[lead.status]?.label; lead.status=value;
   addActivity(lead,"status",`Stage changed: ${old} → ${STATUS_CFG[value].label}`);
   await dbSaveLead(lead); render();
+}
+async function inlineUpdate(id, field, value) {
+  const lead=leads.find(l=>l.id===id); if(!lead) return;
+  lead[field]=value;
+  await dbSaveLead(lead);
+}
+function openInlineNote(id, el) {
+  el.style.display="none";
+  const wrap=document.getElementById("note-input-"+id);
+  if(wrap){wrap.style.display="flex";wrap.style.flexDirection="column";}
+  const inp=document.getElementById("note-val-"+id);
+  if(inp){inp.value="";setTimeout(()=>inp.focus(),50);}
+}
+async function saveInlineNote(id) {
+  const inp=document.getElementById("note-val-"+id);
+  const text=inp?.value.trim(); if(!text) return closeInlineNote(id);
+  const lead=leads.find(l=>l.id===id); if(!lead) return;
+  addActivity(lead,"note",text);
+  await dbSaveLead(lead);
+  const display=document.getElementById("note-display-"+id);
+  if(display){display.textContent=text.slice(0,50)+(text.length>50?"…":"");display.style.display="block";}
+  const wrap=document.getElementById("note-input-"+id);
+  if(wrap) wrap.style.display="none";
+}
+function closeInlineNote(id) {
+  const display=document.getElementById("note-display-"+id);
+  if(display) display.style.display="block";
+  const wrap=document.getElementById("note-input-"+id);
+  if(wrap) wrap.style.display="none";
 }
 
 // ---- KANBAN ----
