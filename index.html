@@ -32,6 +32,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);ove
 ::-webkit-scrollbar-track{background:transparent}
 ::-webkit-scrollbar-thumb{background:var(--accent);border-radius:4px}
 input,select,textarea{font-family:'DM Sans',sans-serif;font-size:13px;color:var(--text);background:var(--bg3);border:0.5px solid var(--border2);border-radius:var(--radius);padding:9px 12px;width:100%;outline:none;transition:border-color .15s,background .15s}
+input[type="date"]{color-scheme:dark}
+input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(1) sepia(1) saturate(3) hue-rotate(80deg) brightness(1.4);cursor:pointer;opacity:1}
 input:focus,select:focus,textarea:focus{border-color:var(--accent-bright);background:var(--bg4)}
 input::placeholder,textarea::placeholder{color:var(--text3)}
 select option{background:#3c2268;color:#fff}
@@ -767,7 +769,11 @@ function renderDashboard() {
     <div class="dash-grid" style="grid-template-columns:repeat(4,1fr)">
       <div class="dash-stat" style="cursor:pointer" onclick="showView('list');setFilter('all')" title="View all leads"><div class="dash-stat-num">${total}</div><div class="dash-stat-label">Total leads</div><div class="dash-stat-sub">${active} active in pipeline</div></div>
       <div class="dash-stat" style="cursor:pointer" onclick="showView('list');setFilter('closed')" title="View closed leads"><div class="dash-stat-num" style="color:#86efac">${closed}</div><div class="dash-stat-label">Closed</div><div class="dash-stat-sub">&nbsp;</div></div>
-      <div class="dash-stat" style="cursor:pointer" onclick="showView('list');setFilter('all');document.getElementById('sort-select').value='added'" title="View accounts with invoices"><div class="dash-stat-num" style="color:#c084fc">${newAccounts}</div><div class="dash-stat-label">New accounts</div><div class="dash-stat-sub">$${totalLTV.toLocaleString()} lifetime value</div></div>
+      <div class="dash-stat" style="cursor:pointer;background:linear-gradient(135deg,rgba(34,197,94,0.15),rgba(16,185,129,0.08));border-color:rgba(34,197,94,0.4)" onclick="showView('list');setFilter('all');document.getElementById('sort-select').value='added'" title="View accounts with invoices">
+        <div style="font-size:11px;font-weight:700;color:#86efac;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">💰 Lifetime Value</div>
+        <div style="font-size:42px;font-weight:700;color:#86efac;letter-spacing:-2px;font-family:'DM Mono',monospace;line-height:1">$${totalLTV.toLocaleString()}</div>
+        <div style="font-size:12px;color:rgba(134,239,172,0.7);margin-top:8px">${newAccounts} account${newAccounts!==1?"s":""} invoiced</div>
+      </div>
       <div class="dash-stat" style="cursor:pointer" onclick="showView('list');setFilter('overdue')" title="View overdue follow-ups"><div class="dash-stat-num" style="color:${overdue>0?"#fca5a5":"#fff"}">${overdue}</div><div class="dash-stat-label">Overdue follow-ups</div><div class="dash-stat-sub">&nbsp;</div></div>
     </div>
 
@@ -798,9 +804,11 @@ function renderDashboard() {
       </div>
     </div>
 
-    <div class="dash-charts">
+    <div class="dash-charts" style="grid-template-columns:1fr 1fr">
       <div class="chart-card"><h3>Pipeline by stage</h3><div class="chart-wrap"><canvas id="chart-pipeline"></canvas></div></div>
       <div class="chart-card"><h3>Leads by vertical</h3><div class="chart-wrap"><canvas id="chart-vertical"></canvas></div></div>
+      <div class="chart-card"><h3>Invoices by vertical</h3><div class="chart-wrap"><canvas id="chart-inv-vertical"></canvas></div></div>
+      <div class="chart-card"><h3>Estimates by vertical</h3><div class="chart-wrap"><canvas id="chart-est-vertical"></canvas></div></div>
     </div>`;
 
   setTimeout(()=>{
@@ -812,6 +820,20 @@ function renderDashboard() {
     const vKeys=Object.keys(verts).sort((a,b)=>verts[b]-verts[a]).slice(0,7);
     const c2=document.getElementById("chart-vertical")?.getContext("2d");
     if (c2) charts.vertical=new Chart(c2,{type:"bar",data:{labels:vKeys,datasets:[{data:vKeys.map(k=>verts[k]),backgroundColor:"rgba(192,96,255,0.25)",borderColor:"#c060ff",borderWidth:1.5,borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:"#d0b8ff",font:{family:"DM Sans",size:10}},grid:{display:false},border:{display:false}},y:{ticks:{color:"#d0b8ff",font:{family:"DM Mono",size:10},stepSize:1},grid:{color:"rgba(192,96,255,0.08)"},border:{display:false}}}}});
+
+    // Invoices by vertical
+    if (charts.invVertical) charts.invVertical.destroy();
+    const invVerts={}; allInvoices.forEach(inv=>{const lead=leads.find(l=>l.id===inv.leadId); const v=(lead?.vertical)||"Other"; invVerts[v]=(invVerts[v]||0)+(parseFloat(inv.amount)||0);});
+    const ivKeys=Object.keys(invVerts).sort((a,b)=>invVerts[b]-invVerts[a]).slice(0,7);
+    const c3=document.getElementById("chart-inv-vertical")?.getContext("2d");
+    if (c3) charts.invVertical=new Chart(c3,{type:"bar",data:{labels:ivKeys.length?ivKeys:["No data"],datasets:[{data:ivKeys.length?ivKeys.map(k=>invVerts[k]):[0],backgroundColor:"rgba(34,197,94,0.25)",borderColor:"#86efac",borderWidth:1.5,borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:"#86efac",font:{family:"DM Sans",size:10}},grid:{display:false},border:{display:false}},y:{ticks:{color:"#86efac",font:{family:"DM Mono",size:10},callback:v=>"$"+v.toLocaleString()},grid:{color:"rgba(34,197,94,0.08)"},border:{display:false}}}}});
+
+    // Estimates by vertical
+    if (charts.estVertical) charts.estVertical.destroy();
+    const estVerts={}; allEstimates.forEach(est=>{const lead=leads.find(l=>l.id===est.leadId); const v=(lead?.vertical)||"Other"; estVerts[v]=(estVerts[v]||0)+(parseFloat(est.amount)||0);});
+    const evKeys=Object.keys(estVerts).sort((a,b)=>estVerts[b]-estVerts[a]).slice(0,7);
+    const c4=document.getElementById("chart-est-vertical")?.getContext("2d");
+    if (c4) charts.estVertical=new Chart(c4,{type:"bar",data:{labels:evKeys.length?evKeys:["No data"],datasets:[{data:evKeys.length?evKeys.map(k=>estVerts[k]):[0],backgroundColor:"rgba(245,158,11,0.25)",borderColor:"#fcd34d",borderWidth:1.5,borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:"#fcd34d",font:{family:"DM Sans",size:10}},grid:{display:false},border:{display:false}},y:{ticks:{color:"#fcd34d",font:{family:"DM Mono",size:10},callback:v=>"$"+v.toLocaleString()},grid:{color:"rgba(245,158,11,0.08)"},border:{display:false}}}}});
   },50);
 }
 
