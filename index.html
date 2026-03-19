@@ -538,8 +538,15 @@ window.addEventListener("DOMContentLoaded",()=>{
 });
 
 // Prevent browser back button from leaving the app
-window.addEventListener("load",()=>{ history.pushState(null,null,window.location.href); });
-window.addEventListener("popstate",()=>{ history.pushState(null,null,window.location.href); });
+history.pushState({app:true}, '', window.location.href);
+window.addEventListener("popstate", (e) => {
+  history.pushState({app:true}, '', window.location.href);
+  // If a modal is open, close it instead of doing nothing
+  ["detail-modal","add-modal","import-modal"].forEach(id => {
+    const el = document.getElementById(id);
+    if (el?.classList.contains("on")) el.classList.remove("on");
+  });
+});
 
 // ---- UTILS ----
 function uid() { return Date.now().toString(36)+Math.random().toString(36).slice(2); }
