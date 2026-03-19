@@ -918,6 +918,18 @@ function renderDetailBody(l) {
           </select></div>
         <div class="fg"><label>Assign rep</label><select id="e-rep">${repOpts}</select></div>
       </div>
+      <div style="margin-top:10px;padding-top:10px;border-top:0.5px solid var(--border)">
+        <p style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">Deal Details</p>
+        <div class="form-grid-2" style="margin-bottom:10px">
+          <div class="fg"><label>Lead date</label><input id="e-lead_date" type="date" value="${l.lead_date||""}"></div>
+          <div class="fg"><label>Closed date</label><input id="e-closed_date" type="date" value="${l.closed_date||""}"></div>
+        </div>
+        <div class="form-grid-2" style="margin-bottom:10px">
+          <div class="fg"><label>Estimate #</label><input id="e-estimate_num" value="${l.estimate_num||""}" placeholder="e.g. EST-0042"></div>
+          <div class="fg"><label>Invoice #</label><input id="e-invoice_num" value="${l.invoice_num||""}" placeholder="e.g. INV-0042"></div>
+        </div>
+        <div class="fg" style="margin-bottom:10px"><label>Deal notes</label><textarea id="e-deal_notes" rows="3" style="width:100%;font-family:'DM Sans',sans-serif;font-size:13px;resize:vertical">${l.deal_notes||""}</textarea></div>
+      </div>
       <button class="btn btn-accent btn-sm" onclick="saveEdit()">Save changes</button>
       <div style="margin-top:1.5rem;padding-top:1rem;border-top:0.5px solid var(--border)">
         <p style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">Manage reps</p>
@@ -973,7 +985,7 @@ async function quickUpdateField(field, value) {
 }
 async function saveEdit() {
   const lead = leads.find(l => l.id===editId); if(!lead) return;
-  ["firstName","lastName","email","phone","company","title"].forEach(f => { const el=document.getElementById("e-"+f); if(el) lead[f]=el.value; });
+  ["firstName","lastName","email","phone","company","title","lead_date","closed_date","estimate_num","invoice_num","deal_notes"].forEach(f => { const el=document.getElementById("e-"+f); if(el) lead[f]=el.value; });
   const ev = document.getElementById("e-vertical"); if(ev) lead.vertical = ev.value;
   const er = document.getElementById("e-rep"); if(er) lead.rep = er.value;
   addActivity(lead, "note", "Lead details updated");
