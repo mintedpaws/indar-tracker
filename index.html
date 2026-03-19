@@ -285,6 +285,7 @@ tr:hover td{background:rgba(192,96,255,0.05)}
         <input id="global-search" placeholder="Search leads..." oninput="onSearch()">
       </div>
       <button class="btn btn-ghost btn-sm" onclick="openImportModal()" title="Import CSV" style="font-size:18px;padding:4px 8px;opacity:.7">⚙</button>
+      <button class="btn btn-sm" onclick="deleteAllLeads()" style="color:#fca5a5;border-color:rgba(239,68,68,.3);font-size:11px">🗑 Delete all</button>
       <div class="user-badge" id="user-badge" title="Sign out" onclick="logout()">?</div>
     </div>
   </div>
@@ -554,7 +555,24 @@ function today() { return new Date().toISOString().slice(0,10); }
 function weekStart() { const d=new Date(); d.setDate(d.getDate()-d.getDay()); return d.toISOString().slice(0,10); }
 function weekEnd() { const d=new Date(); d.setDate(d.getDate()+(6-d.getDay())); return d.toISOString().slice(0,10); }
 function now() { return new Date().toLocaleString("en-US",{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"}); }
-function fmtDate(d) { if(!d) return "—"; const[y,m,day]=d.split("-"); return m+"/"+day+"/"+y.slice(2); }
+function fmtDate(d) {
+  if(!d) return "—";
+  d = String(d).trim();
+  // Already MM/DD/YYYY or M/D/YYYY
+  if(d.includes("/")) {
+    const parts = d.split("/");
+    if(parts.length===3) {
+      const [m,day,y] = parts;
+      return m.padStart(2,"0")+"/"+day.padStart(2,"0")+"/"+String(y).slice(-2);
+    }
+    return d;
+  }
+  // ISO YYYY-MM-DD or YYYY-MM-DDTHH:MM:SS
+  const iso = d.slice(0,10);
+  const [y,m,day] = iso.split("-");
+  if(!y||!m||!day) return d;
+  return m+"/"+day+"/"+y.slice(2);
+}
 function fcClass(d) { if(!d) return ""; const diff=(new Date(d)-new Date(today()))/86400000; if(diff<0) return "overdue"; if(diff<=3) return "due-soon"; return ""; }
 function repInitials(name) { if(!name) return "?"; return name.split(" ").map(w=>w[0]).join("").toUpperCase().slice(0,2); }
 function showToast(msg,isError,isSuccess) {
@@ -1143,6 +1161,15 @@ async function removeInvoice(invId) {
   switchTab(document.querySelectorAll(".modal-tab")[0],"dtab-overview");
 }
 function closeDetail(){document.getElementById("detail-modal").classList.remove("on");editId=null;}
+async function deleteAllLeads() {
+  if(!confirm(`Delete ALL ${leads.length} leads? This cannot be undone.`)) return;
+  if(!confirm("Are you sure? This will permanently delete everything.")) return;
+  showToast("Deleting all leads...");
+  await Promise.all(leads.map(l=>dbDeleteLead(l.id)));
+  leads=[];
+  render();
+  showToast("✓ All leads deleted",false,true);
+}
 async function confirmDelete(id) {
   const l=leads.find(x=>x.id===id); if(!l) return;
   if(confirm(`Delete ${l.firstName} ${l.lastName||""} at ${l.company}? This cannot be undone.`)){
@@ -1267,9 +1294,9 @@ async function doImport() {
   const newRows=importPreviewData.filter(r=>!r._dup);
   const btn=document.getElementById("do-import-btn"); btn.disabled=true; btn.textContent="Importing...";
   const newLeads=newRows.map(r=>{
-    const lead={id:uid(),dateAdded:today(),activity:[],estimates:[],invoices:[],firstName:r.firstName||"",lastName:r.lastName||"",email:r.email||"",phone:r.phone||"",company:r.company||"",vertical:r.vertical||"",title:r.title||"",status:STATUSES.includes(r.status)?r.status:"new",rep:r.rep||"",followup:r.followup||"",value:r.value||"",lead_date:r.lead_date||"",last_contact_date:r.last_contact_date||"",closed_date:"",deal_notes:""};
+    const lead={id:uid(),dateAdded:today(),activity:[],estimates:[],invoices:[],firstName:r.firstName||"",lastName:r.lastName||"",email:r.email||"",phone:r.phone||"",company:r.company||"",vertical:r.vertical||"",title:r.title||"",status:STATUSES.includes(r.status)?r.status:"new",rep:r.rep||"",followup:r.followup||"",value:r.value||"",lead_date:r.lead_date||"",last_contact_date:r.last_contact_date||"",closed_date:"",deal_notes:r.notes||""};
     addActivity(lead,"created",`Lead imported via CSV${r.rep?" · assigned to "+r.rep:""}`);
-    if(r.notes&&r.notes.trim()) addActivity(lead,"note",r.notes.trim());
+    if(r.notes&&String(r.notes).trim()&&String(r.notes).trim()!=="nan") addActivity(lead,"note",String(r.notes).trim());
     if(r.rep&&!reps.includes(r.rep)) reps.push(r.rep);
     return lead;
   });
