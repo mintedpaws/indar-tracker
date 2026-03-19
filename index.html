@@ -18,7 +18,7 @@
   --contacted-bg:rgba(14,165,233,0.2); --contacted-cl:#7dd3fc;
   --samples-p-bg:rgba(168,85,247,0.2); --samples-p-cl:#d8b4fe;
   --samples-s-bg:rgba(236,72,153,0.2); --samples-s-cl:#f9a8d4;
-  --estimate-bg:rgba(245,158,11,0.2); --estimate-cl:#fcd34d;
+  --proofing-bg:rgba(251,146,60,0.2); --proofing-cl:#fdba74;
   --closed-bg:rgba(34,197,94,0.2); --closed-cl:#86efac;
   --dead-bg:rgba(239,68,68,0.2); --dead-cl:#fca5a5;
   --radius:8px; --radius-lg:14px; --radius-xl:20px;
@@ -275,6 +275,7 @@ tr:hover td{background:rgba(192,96,255,0.05)}
       <button class="nav-btn on" onclick="showView('dashboard')">Dashboard</button>
       <button class="nav-btn" onclick="showView('kanban')">Leads View</button>
       <button class="nav-btn" onclick="showView('list')">List View</button>
+      <button class="nav-btn" onclick="showView('samples')" style="color:#fdba74">Samples</button>
     </nav>
     <div class="topbar-center">
       <button class="btn btn-accent" onclick="openAddLead()" style="padding:10px 32px;font-size:15px;font-weight:700">+ Add lead</button>
@@ -285,7 +286,6 @@ tr:hover td{background:rgba(192,96,255,0.05)}
         <input id="global-search" placeholder="Search leads..." oninput="onSearch()">
       </div>
       <button class="btn btn-ghost btn-sm" onclick="openImportModal()" title="Import CSV" style="font-size:18px;padding:4px 8px;opacity:.7">⚙</button>
-      <button class="btn btn-sm" onclick="deleteAllLeads()" style="color:#fca5a5;border-color:rgba(239,68,68,.3);font-size:11px">🗑 Delete all</button>
       <div class="user-badge" id="user-badge" title="Sign out" onclick="logout()">?</div>
     </div>
   </div>
@@ -311,7 +311,7 @@ tr:hover td{background:rgba(192,96,255,0.05)}
         <div class="table-wrap">
           <table>
             <thead><tr>
-              <th>Company</th><th>Name</th><th>Vertical</th><th>Rep</th><th>Stage</th><th>Lead date</th><th>Follow-up</th><th>Last contact</th><th>Last note</th><th></th>
+              <th>Company</th><th>Name</th><th>Phone</th><th>Vertical</th><th>Rep</th><th>Stage</th><th>Lead date</th><th>Follow-up</th><th>Last contact</th><th>Last note</th><th></th>
             </tr></thead>
             <tbody id="tbody"></tbody>
           </table>
@@ -320,6 +320,7 @@ tr:hover td{background:rgba(192,96,255,0.05)}
       </div>
     </div>
     <div class="panel on" id="panel-dashboard"><div class="dashboard" id="dashboard-content"></div></div>
+    <div class="panel" id="panel-samples"><div class="dashboard" id="samples-content"></div></div>
     <div class="panel" id="panel-kanban">
       <div class="kanban-wrap">
         <div class="kanban-toolbar">
@@ -372,7 +373,7 @@ tr:hover td{background:rgba(192,96,255,0.05)}
           <div class="fg"><label>Stage</label>
             <select id="f-status">
               <option value="new">New</option><option value="contacted">Contacted</option>
-              <option value="samples_progress">Samples in Progress</option><option value="samples_sent">Samples Sent</option>
+              <option value="samples_progress">Samples in Progress</option><option value="proofing">Proofing</option><option value="samples_sent">Samples Sent</option>
               <option value="estimate_sent">Estimate Sent</option><option value="closed">Closed</option><option value="dead">Dead</option>
             </select>
           </div>
@@ -430,6 +431,7 @@ const STATUS_CFG = {
   new:              {label:"New",                 bg:"var(--new-bg)",       cl:"var(--new-cl)",       dot:"#a5b4fc"},
   contacted:        {label:"Contacted",           bg:"var(--contacted-bg)", cl:"var(--contacted-cl)", dot:"#7dd3fc"},
   samples_progress: {label:"Samples in Progress", bg:"var(--samples-p-bg)", cl:"var(--samples-p-cl)", dot:"#d8b4fe"},
+  proofing:         {label:"Proofing",            bg:"var(--proofing-bg)",   cl:"var(--proofing-cl)",  dot:"#fdba74"},
   samples_sent:     {label:"Samples Sent",        bg:"var(--samples-s-bg)", cl:"var(--samples-s-cl)", dot:"#f9a8d4"},
   estimate_sent:    {label:"Estimate Sent",       bg:"var(--estimate-bg)",  cl:"var(--estimate-cl)",  dot:"#fcd34d"},
   closed:           {label:"Closed",              bg:"var(--closed-bg)",    cl:"var(--closed-cl)",    dot:"#86efac"},
@@ -613,10 +615,11 @@ function showView(name) {
   document.querySelectorAll(".panel").forEach(p=>p.classList.remove("on"));
   document.querySelectorAll(".nav-btn").forEach(b=>b.classList.remove("on"));
   document.getElementById("panel-"+name).classList.add("on");
-  [{k:"dashboard",i:0},{k:"kanban",i:1},{k:"list",i:2}].forEach(v=>{if(v.k===name) document.querySelectorAll(".nav-btn")[v.i]?.classList.add("on");});
+  [{k:"dashboard",i:0},{k:"kanban",i:1},{k:"list",i:2},{k:"samples",i:3}].forEach(v=>{if(v.k===name) document.querySelectorAll(".nav-btn")[v.i]?.classList.add("on");});
   if (name==="dashboard") renderDashboard();
   if (name==="list") renderList();
   if (name==="kanban") renderKanban();
+  if (name==="samples") renderSamples();
 }
 function onSearch() { searchQ=document.getElementById("global-search").value.toLowerCase(); render(); }
 function render() {
@@ -624,6 +627,7 @@ function render() {
   if (v.id==="panel-dashboard") renderDashboard();
   if (v.id==="panel-list") renderList();
   if (v.id==="panel-kanban") renderKanban();
+  if (v.id==="panel-samples") renderSamples();
 }
 
 // ---- DASHBOARD ----
@@ -780,7 +784,15 @@ function renderList() {
     return `<tr>
       <td class="td-company" style="cursor:pointer;font-weight:700;font-size:14px" onclick="openLead('${l.id}')">${l.company||""}</td>
       <td class="td-name" onclick="openLead('${l.id}')" style="font-size:12px;color:var(--text3);font-weight:500">${l.firstName||""} ${l.lastName||""}</td>
-      <td style="font-size:11px;color:var(--text3)">${l.vertical||"—"}</td>
+      <td style="font-size:12px;color:var(--text3)">${l.phone||"—"}</td>
+      <td onclick="event.stopPropagation()">
+        <select style="font-size:11px;padding:3px 8px;width:auto;background:transparent;border-color:transparent;color:${l.vertical?"var(--text2)":"var(--text3)"};cursor:pointer"
+          onmouseover="this.style.borderColor='var(--border2)'" onmouseout="this.style.borderColor='transparent'"
+          onchange="inlineUpdate('${l.id}','vertical',this.value);this.style.color=this.value?'var(--text2)':'var(--text3)'">
+          <option value="" ${!l.vertical?'selected':''}>—</option>
+          ${["Portable Sanitation","Equipment Rental","Waste Management / Dumpster Rental","Construction","Propane / Oil","C-Store / Car Wash","Other"].map(v=>`<option value="${v}"${l.vertical===v?" selected":""}>${v}</option>`).join("")}
+        </select>
+      </td>
       <td>${l.rep?`<span style="display:inline-flex;align-items:center;gap:5px"><span style="width:18px;height:18px;border-radius:50%;background:var(--accent-dim);border:1px solid var(--accent);display:inline-flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:var(--accent-bright)">${repInitials(l.rep)}</span><span style="font-size:12px">${l.rep}</span></span>`:'<span style="color:var(--text3);font-size:11px">—</span>'}</td>
       <td><select class="stage-select" style="background:${sc.bg};color:${sc.cl}" onchange="quickUpdateStatusFromList('${l.id}',this.value)" onclick="event.stopPropagation()">${statusOpts}</select></td>
       <td style="font-size:12px;color:${l.lead_date?"var(--text2)":"var(--text3)"}"> ${l.lead_date?fmtDate(l.lead_date):"—"}</td>
@@ -790,14 +802,11 @@ function renderList() {
           onmouseover="this.style.borderColor='var(--border2)'" onmouseout="this.style.borderColor='transparent'"
           onchange="inlineUpdate('${l.id}','followup',this.value);this.style.color=this.value?'var(--text2)':'var(--text3)'">
       </td>
-      <td onclick="event.stopPropagation()" style="min-width:160px">
-        <div style="display:flex;align-items:center;gap:6px">
-          <input type="date" value="${l.last_contact_date||""}" title="Last contact date"
-            style="font-size:12px;padding:4px 8px;width:auto;min-width:105px;color:${l.last_contact_date?(lcClass==="overdue"?"#fca5a5":"var(--text2)"):"var(--text3)"};background:transparent;border-color:transparent;cursor:pointer"
-            onmouseover="this.style.borderColor='var(--border2)'" onmouseout="this.style.borderColor='transparent'"
-            onchange="inlineUpdate('${l.id}','last_contact_date',this.value);this.style.color=this.value?'var(--text2)':'var(--text3)'">
-          <button class="contact-btn" onclick="madeContact('${l.id}',this)" title="Mark as made contact today">✓ Made contact</button>
-        </div>
+      <td onclick="event.stopPropagation()" style="min-width:120px">
+        <input type="date" value="${l.last_contact_date||""}" title="Last contact date"
+          style="font-size:12px;padding:4px 8px;width:auto;min-width:110px;color:${l.last_contact_date?(lcClass==="overdue"?"#fca5a5":"var(--text2)"):"var(--text3)"};background:transparent;border-color:transparent;cursor:pointer"
+          onmouseover="this.style.borderColor='var(--border2)'" onmouseout="this.style.borderColor='transparent'"
+          onchange="inlineUpdate('${l.id}','last_contact_date',this.value);this.style.color=this.value?'var(--text2)':'var(--text3)'">
       </td>
       <td onclick="event.stopPropagation()" style="max-width:200px" title="Click to add note">
         <span id="note-display-${l.id}" style="font-size:11px;color:var(--text3);cursor:pointer;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:4px 2px;border-radius:4px"
@@ -826,19 +835,6 @@ async function quickUpdateStatusFromList(id,value) {
 async function inlineUpdate(id,field,value) {
   const lead=leads.find(l=>l.id===id); if(!lead) return;
   lead[field]=value; await dbSaveLead(lead);
-}
-async function madeContact(id, btn) {
-  const lead=leads.find(l=>l.id===id); if(!lead) return;
-  lead.last_contact_date = today();
-  addActivity(lead,"contact",`Made contact on ${fmtDate(today())}`);
-  await dbSaveLead(lead);
-  // Update the date input visually without full re-render
-  const row = btn.closest("tr");
-  if (row) {
-    const inp = row.querySelector('input[type="date"][title="Last contact date"]');
-    if (inp) { inp.value=today(); inp.style.color="var(--text2)"; }
-  }
-  showToast("✓ Contact logged for "+lead.firstName,false,true);
 }
 function openInlineNote(id,el) {
   el.style.display="none";
@@ -891,6 +887,71 @@ function renderKanban() {
     board.appendChild(col);
   });
 }
+// ---- SAMPLES VIEW ----
+function renderSamples() {
+  const stages = ["samples_progress","proofing","samples_sent"];
+  const stageLeads = stages.map(s=>({
+    status: s,
+    cfg: STATUS_CFG[s],
+    leads: leads.filter(l=>l.status===s&&(!searchQ||[l.firstName,l.lastName,l.company].some(f=>f?.toLowerCase().includes(searchQ))))
+      .sort((a,b)=>(a.lead_date||"9999").localeCompare(b.lead_date||"9999"))
+  }));
+  const total = stageLeads.reduce((s,g)=>s+g.leads.length,0);
+
+  const el = document.getElementById("samples-content");
+  el.innerHTML = `
+    <div class="dash-header" style="margin-bottom:1rem">
+      <h2>Samples in Progress <span style="font-size:14px;font-weight:400;color:var(--text3);margin-left:8px">${total} lead${total!==1?"s":""}</span></h2>
+    </div>
+    ${stageLeads.map(g=>`
+      <div style="margin-bottom:2rem">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+          <div style="width:10px;height:10px;border-radius:50%;background:${g.cfg.dot};flex-shrink:0"></div>
+          <h3 style="font-size:13px;font-weight:700;color:#fff;text-transform:uppercase;letter-spacing:.08em">${g.cfg.label}</h3>
+          <span style="font-size:11px;background:${g.cfg.bg};color:${g.cfg.cl};padding:2px 10px;border-radius:20px;font-family:'DM Mono',monospace">${g.leads.length}</span>
+        </div>
+        ${g.leads.length===0?`<p style="font-size:12px;color:var(--text3);padding:10px 0 10px 20px">None in this stage.</p>`:`
+        <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:auto">
+          <table style="width:100%;border-collapse:collapse;min-width:600px">
+            <thead><tr>
+              <th style="padding:10px 14px;text-align:left;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.09em;background:var(--bg3);border-bottom:1px solid var(--border2)">Company</th>
+              <th style="padding:10px 14px;text-align:left;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.09em;background:var(--bg3);border-bottom:1px solid var(--border2)">Contact</th>
+              <th style="padding:10px 14px;text-align:left;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.09em;background:var(--bg3);border-bottom:1px solid var(--border2)">Rep</th>
+              <th style="padding:10px 14px;text-align:left;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.09em;background:var(--bg3);border-bottom:1px solid var(--border2)">Lead date</th>
+              <th style="padding:10px 14px;text-align:left;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.09em;background:var(--bg3);border-bottom:1px solid var(--border2)">Last contact</th>
+              <th style="padding:10px 14px;text-align:left;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.09em;background:var(--bg3);border-bottom:1px solid var(--border2)">Move to</th>
+              <th style="padding:10px 14px;background:var(--bg3);border-bottom:1px solid var(--border2)"></th>
+            </tr></thead>
+            <tbody>
+              ${g.leads.map(l=>`<tr style="cursor:pointer" onclick="openLead('${l.id}')">
+                <td style="padding:11px 14px;font-size:13px;font-weight:700;color:#fff;border-bottom:0.5px solid var(--border)">${l.company||""}</td>
+                <td style="padding:11px 14px;font-size:12px;color:var(--text3);border-bottom:0.5px solid var(--border)">${l.firstName||""} ${l.lastName||""}</td>
+                <td style="padding:11px 14px;font-size:12px;color:var(--accent-bright);border-bottom:0.5px solid var(--border)">${l.rep||"—"}</td>
+                <td style="padding:11px 14px;font-size:12px;color:var(--text3);border-bottom:0.5px solid var(--border)">${l.lead_date?fmtDate(l.lead_date):"—"}</td>
+                <td style="padding:11px 14px;font-size:12px;color:var(--text3);border-bottom:0.5px solid var(--border)">${l.last_contact_date?fmtDate(l.last_contact_date):"—"}</td>
+                <td style="padding:11px 14px;border-bottom:0.5px solid var(--border)" onclick="event.stopPropagation()">
+                  <select style="font-size:11px;padding:3px 8px;width:auto;background:var(--bg3);border:0.5px solid var(--border2);border-radius:var(--radius);color:var(--text2);cursor:pointer"
+                    onchange="quickUpdateStatusSamples('${l.id}',this.value)">
+                    ${stages.map(s=>`<option value="${s}"${l.status===s?" selected":""}>${STATUS_CFG[s].label}</option>`).join("")}
+                    <option value="estimate_sent"${l.status==="estimate_sent"?" selected":""}>→ Estimate Sent</option>
+                    <option value="closed"${l.status==="closed"?" selected":""}>→ Closed</option>
+                    <option value="dead"${l.status==="dead"?" selected":""}>→ Dead</option>
+                  </select>
+                </td>
+                <td style="padding:11px 14px;text-align:right;border-bottom:0.5px solid var(--border)"><button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();openLead('${l.id}')">View</button></td>
+              </tr>`).join("")}
+            </tbody>
+          </table>
+        </div>`}
+      </div>`).join("")}`;
+}
+async function quickUpdateStatusSamples(id, value) {
+  const lead=leads.find(l=>l.id===id); if(!lead) return;
+  const old=STATUS_CFG[lead.status]?.label; lead.status=value;
+  addActivity(lead,"status",`Stage changed: ${old} → ${STATUS_CFG[value]?.label||value}`);
+  await dbSaveLead(lead); render();
+}
+
 let dragId=null;
 function onDragStart(e,id){dragId=id;}
 function onDragOver(e,s){e.preventDefault();document.getElementById("kcol-"+s)?.closest(".kanban-col")?.classList.add("drag-over");}
@@ -1161,15 +1222,6 @@ async function removeInvoice(invId) {
   switchTab(document.querySelectorAll(".modal-tab")[0],"dtab-overview");
 }
 function closeDetail(){document.getElementById("detail-modal").classList.remove("on");editId=null;}
-async function deleteAllLeads() {
-  if(!confirm(`Delete ALL ${leads.length} leads? This cannot be undone.`)) return;
-  if(!confirm("Are you sure? This will permanently delete everything.")) return;
-  showToast("Deleting all leads...");
-  await Promise.all(leads.map(l=>dbDeleteLead(l.id)));
-  leads=[];
-  render();
-  showToast("✓ All leads deleted",false,true);
-}
 async function confirmDelete(id) {
   const l=leads.find(x=>x.id===id); if(!l) return;
   if(confirm(`Delete ${l.firstName} ${l.lastName||""} at ${l.company}? This cannot be undone.`)){
