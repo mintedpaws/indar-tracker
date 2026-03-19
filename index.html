@@ -317,7 +317,10 @@ tr:hover td{background:rgba(192,96,255,0.05)}
         <div class="table-wrap">
           <table>
             <thead><tr>
-              <th>Company</th><th>Name</th><th>Phone</th><th>Vertical</th><th>Rep</th><th>Stage</th><th>Lead date</th><th>Last contact</th><th>Last note</th><th></th>
+              <th>Company</th><th>Name</th><th>Phone</th><th>Vertical</th><th>Rep</th><th>Stage</th>
+              <th onclick="toggleSort('lead_date')" style="cursor:pointer;user-select:none" id="th-lead_date">Lead date <span id="sort-arrow-lead_date" style="opacity:.5"></span></th>
+              <th onclick="toggleSort('last_contact')" style="cursor:pointer;user-select:none" id="th-last_contact">Last contact <span id="sort-arrow-last_contact" style="opacity:.5"></span></th>
+              <th>Last note</th><th></th>
             </tr></thead>
             <tbody id="tbody"></tbody>
           </table>
@@ -448,6 +451,7 @@ const STATUSES = Object.keys(STATUS_CFG);
 
 let leads = [], reps = [], currentUser = null;
 let filterStatus = "all", filterRep = "", searchQ = "", editId = null;
+let sortDir = {}; // tracks asc/desc per column key
 let charts = {}, importPreviewData = [];
 
 // ---- DB ----
@@ -786,9 +790,25 @@ function renderList() {
     if(sortKey==="status") return STATUSES.indexOf(a.status)-STATUSES.indexOf(b.status);
     if(sortKey==="rep") return (a.rep||"zzz").localeCompare(b.rep||"zzz");
     if(sortKey==="added") return (b.dateAdded||"").localeCompare(a.dateAdded||"");
-    if(sortKey==="last_contact") return parseDate(b.last_contact_date)-parseDate(a.last_contact_date);
-    if(sortKey==="lead_date") return parseDate(b.lead_date)-parseDate(a.lead_date);
+    if(sortKey==="last_contact") return sortDir["last_contact"]==="asc"
+      ? parseDate(a.last_contact_date)-parseDate(b.last_contact_date)
+      : parseDate(b.last_contact_date)-parseDate(a.last_contact_date);
+    if(sortKey==="lead_date") return sortDir["lead_date"]==="asc"
+      ? parseDate(a.lead_date)-parseDate(b.lead_date)
+      : parseDate(b.lead_date)-parseDate(a.lead_date);
     return parseDate(a.followup)-parseDate(b.followup);
+  });
+  // Update sort arrows
+  ["lead_date","last_contact"].forEach(k=>{
+    const el=document.getElementById("sort-arrow-"+k);
+    if(!el) return;
+    if(sortKey===(k==="last_contact"?"last_contact":k)) {
+      el.textContent = sortDir[k]==="asc" ? "↑" : "↓";
+      el.style.opacity="1";
+    } else {
+      el.textContent="↕"; el.style.opacity=".3";
+    }
+  });
   });
   const empty=document.getElementById("list-empty");
   const tbody=document.getElementById("tbody");
@@ -839,6 +859,11 @@ function renderList() {
   }).join("");
 }
 function setFilter(s){filterStatus=s;renderList();}
+function toggleSort(key) {
+  sortDir[key] = sortDir[key]==="asc" ? "desc" : "asc";
+  document.getElementById("sort-select").value = key==="lead_date" ? "lead_date" : "last_contact";
+  renderList();
+}
 async function quickUpdateStatusFromList(id,value) {
   const lead=leads.find(l=>l.id===id); if(!lead) return;
   const old=STATUS_CFG[lead.status]?.label; lead.status=value;
