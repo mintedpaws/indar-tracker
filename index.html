@@ -87,9 +87,9 @@ select option{background:#3c2268;color:#fff}
 .dash-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;flex-wrap:wrap;gap:10px}
 .dash-header h2{font-size:18px;font-weight:600;color:#fff}
 .dash-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:1.5rem}
-.dash-stat{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1.25rem 1.5rem;transition:all .2s;position:relative;overflow:hidden}
+.dash-stat{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1.25rem 1.5rem;transition:all .2s;position:relative;overflow:hidden;cursor:pointer}
 .dash-stat::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--accent),var(--accent-bright));opacity:.6}
-.dash-stat:hover{border-color:var(--border2);transform:translateY(-1px)}
+.dash-stat:hover{border-color:var(--accent-bright);transform:translateY(-2px);box-shadow:0 4px 20px rgba(192,96,255,0.2)}
 .dash-stat-num{font-size:36px;font-weight:300;color:#fff;letter-spacing:-1.5px}
 .dash-stat-label{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;margin-top:5px;font-weight:500}
 .dash-stat-sub{font-size:12px;color:var(--text3);margin-top:8px}
@@ -97,17 +97,9 @@ select option{background:#3c2268;color:#fff}
 .chart-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1.25rem}
 .chart-card h3{font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:1rem}
 .chart-wrap{position:relative;height:200px}
-.recent-activity{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1.25rem}
-.recent-activity h3{font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:1rem}
-.activity-item{display:flex;gap:12px;padding:8px 0;border-bottom:0.5px solid var(--border);align-items:flex-start}
-.activity-item:last-child{border-bottom:none}
-.activity-dot{width:6px;height:6px;border-radius:50%;background:var(--accent-bright);margin-top:5px;flex-shrink:0}
-.activity-text{font-size:12px;color:var(--text2);line-height:1.5}
-.activity-text strong{color:#fff}
-.activity-time{font-size:11px;color:var(--text3);margin-top:2px}
 .rep-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;margin-bottom:1.5rem}
-.rep-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1rem 1.25rem;transition:border-color .2s}
-.rep-card:hover{border-color:var(--border2)}
+.rep-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1rem 1.25rem;transition:all .2s;cursor:pointer}
+.rep-card:hover{border-color:var(--accent-bright);transform:translateY(-2px);box-shadow:0 4px 20px rgba(192,96,255,0.15)}
 .rep-card-name{font-size:13px;font-weight:600;color:#fff;margin-bottom:6px;display:flex;align-items:center;gap:8px}
 .rep-avatar{width:22px;height:22px;border-radius:50%;background:var(--accent-dim);border:1px solid var(--accent);display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:var(--accent-bright)}
 .rep-stat{font-size:11px;color:var(--text3);display:flex;justify-content:space-between;margin-top:3px}
@@ -296,7 +288,7 @@ tr:hover td{background:rgba(192,96,255,0.05)}
     </div>
   </div>
   <div class="main-content">
-    <div class="panel on" id="panel-list">
+    <div class="panel" id="panel-list">
       <div class="list-view">
         <div class="list-toolbar">
           <div class="filter-pills" id="filter-pills"></div>
@@ -325,7 +317,7 @@ tr:hover td{background:rgba(192,96,255,0.05)}
         </div>
       </div>
     </div>
-    <div class="panel" id="panel-dashboard"><div class="dashboard" id="dashboard-content"></div></div>
+    <div class="panel on" id="panel-dashboard"><div class="dashboard" id="dashboard-content"></div></div>
     <div class="panel" id="panel-kanban">
       <div class="kanban-wrap">
         <div class="kanban-toolbar">
@@ -545,9 +537,14 @@ window.addEventListener("DOMContentLoaded",()=>{
   document.getElementById("pw-input")?.focus();
 });
 
+// Prevent browser back button from leaving the app
+window.addEventListener("load",()=>{ history.pushState(null,null,window.location.href); });
+window.addEventListener("popstate",()=>{ history.pushState(null,null,window.location.href); });
+
 // ---- UTILS ----
 function uid() { return Date.now().toString(36)+Math.random().toString(36).slice(2); }
 function today() { return new Date().toISOString().slice(0,10); }
+function weekStart() { const d=new Date(); d.setDate(d.getDate()-d.getDay()); return d.toISOString().slice(0,10); }
 function weekEnd() { const d=new Date(); d.setDate(d.getDate()+(6-d.getDay())); return d.toISOString().slice(0,10); }
 function now() { return new Date().toLocaleString("en-US",{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"}); }
 function fmtDate(d) { if(!d) return "—"; const[y,m,day]=d.split("-"); return m+"/"+day+"/"+y.slice(2); }
@@ -621,7 +618,7 @@ function renderDashboard() {
     return {name:r,total:rl.length,closed:rl.filter(l=>l.status==="closed").length,value:rl.filter(l=>l.status==="closed").reduce((s,l)=>s+(parseFloat(l.value)||0),0),ltv};
   });
 
-  // This week's follow-ups
+  // This week's follow-ups = overdue OR due this week
   const we = weekEnd();
   const thisWeek = leads.filter(l=>l.followup&&l.followup<=we&&l.status!=="dead").sort((a,b)=>a.followup.localeCompare(b.followup));
 
@@ -669,10 +666,10 @@ function renderDashboard() {
     </div>
 
     <div class="dash-grid" style="grid-template-columns:repeat(4,1fr)">
-      <div class="dash-stat"><div class="dash-stat-num">${total}</div><div class="dash-stat-label">Total leads</div><div class="dash-stat-sub">${active} active in pipeline</div></div>
-      <div class="dash-stat"><div class="dash-stat-num" style="color:#86efac">${closed}</div><div class="dash-stat-label">Closed</div><div class="dash-stat-sub">$${closedVal.toLocaleString()} closed value</div></div>
-      <div class="dash-stat"><div class="dash-stat-num" style="color:#c084fc">${newAccounts}</div><div class="dash-stat-label">New accounts</div><div class="dash-stat-sub">$${totalLTV.toLocaleString()} lifetime value</div></div>
-      <div class="dash-stat"><div class="dash-stat-num" style="color:${overdue>0?"#fca5a5":"#fff"}">${overdue}</div><div class="dash-stat-label">Overdue follow-ups</div><div class="dash-stat-sub">$${pipeVal.toLocaleString()} pipeline value</div></div>
+      <div class="dash-stat" style="cursor:pointer" onclick="showView('list');setFilter('all')" title="View all leads"><div class="dash-stat-num">${total}</div><div class="dash-stat-label">Total leads</div><div class="dash-stat-sub">${active} active in pipeline</div></div>
+      <div class="dash-stat" style="cursor:pointer" onclick="showView('list');setFilter('closed')" title="View closed leads"><div class="dash-stat-num" style="color:#86efac">${closed}</div><div class="dash-stat-label">Closed</div><div class="dash-stat-sub">$${closedVal.toLocaleString()} closed value</div></div>
+      <div class="dash-stat" style="cursor:pointer" onclick="showView('list');setFilter('all');document.getElementById('sort-select').value='added'" title="View accounts with invoices"><div class="dash-stat-num" style="color:#c084fc">${newAccounts}</div><div class="dash-stat-label">New accounts</div><div class="dash-stat-sub">$${totalLTV.toLocaleString()} lifetime value</div></div>
+      <div class="dash-stat" style="cursor:pointer" onclick="showView('list');setFilter('overdue')" title="View overdue follow-ups"><div class="dash-stat-num" style="color:${overdue>0?"#fca5a5":"#fff"}">${overdue}</div><div class="dash-stat-label">Overdue follow-ups</div><div class="dash-stat-sub">$${pipeVal.toLocaleString()} pipeline value</div></div>
     </div>
 
     ${repStats.length>0?`<div style="margin-bottom:1.5rem">
@@ -706,8 +703,7 @@ function renderDashboard() {
     <div class="dash-charts">
       <div class="chart-card"><h3>Pipeline by stage</h3><div class="chart-wrap"><canvas id="chart-pipeline"></canvas></div></div>
       <div class="chart-card"><h3>Leads by vertical</h3><div class="chart-wrap"><canvas id="chart-vertical"></canvas></div></div>
-    </div>
-    <div class="recent-activity"><h3>Recent activity</h3><div id="recent-list"></div></div>`;
+    </div>`;
 
   setTimeout(()=>{
     if (charts.pipeline) charts.pipeline.destroy();
@@ -719,14 +715,6 @@ function renderDashboard() {
     const c2=document.getElementById("chart-vertical")?.getContext("2d");
     if (c2) charts.vertical=new Chart(c2,{type:"bar",data:{labels:vKeys,datasets:[{data:vKeys.map(k=>verts[k]),backgroundColor:"rgba(192,96,255,0.25)",borderColor:"#c060ff",borderWidth:1.5,borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:"#d0b8ff",font:{family:"DM Sans",size:10}},grid:{display:false},border:{display:false}},y:{ticks:{color:"#d0b8ff",font:{family:"DM Mono",size:10},stepSize:1},grid:{color:"rgba(192,96,255,0.08)"},border:{display:false}}}}});
   },50);
-
-  const allAct=[];
-  leads.forEach(l=>(l.activity||[]).forEach(a=>allAct.push({...a,leadName:l.firstName+" "+(l.lastName||""),company:l.company})));
-  allAct.sort((a,b)=>new Date(b.ts||0)-new Date(a.ts||0));
-  const rl=document.getElementById("recent-list"); if(!rl) return;
-  const recent=allAct.slice(0,8);
-  if (!recent.length){rl.innerHTML='<p style="font-size:12px;color:var(--text3);padding:1rem 0">No activity yet.</p>';return;}
-  rl.innerHTML=recent.map(a=>`<div class="activity-item"><div class="activity-dot" style="background:${a.type==="contact"?"#86efac":a.type==="status"?"#7dd3fc":"var(--accent-bright)"}"></div><div><div class="activity-text"><strong>${a.leadName}</strong> at ${a.company} — ${a.text}</div><div class="activity-time">${a.ts||""} · ${a.author||""}</div></div></div>`).join("");
 }
 
 // ---- LIST ----
@@ -1160,7 +1148,7 @@ function closeAddModal(){document.getElementById("add-modal").classList.remove("
 async function addLead() {
   const firstName=document.getElementById("f-firstName").value.trim();
   const company=document.getElementById("f-company").value.trim();
-  if(!firstName||!company){alert("First name and company are required.");return;}
+  if(!firstName||!company){showToast("First name and company are required.",true);return;}
   const btn=document.getElementById("add-save-btn"); btn.disabled=true; btn.textContent="Saving...";
   const noteText=document.getElementById("f-notes").value.trim();
   const lead={
