@@ -9,10 +9,10 @@
 <style>
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
 :root {
-  --bg:#1a0835; --bg2:#260f52; --bg3:#3d1a82; --bg4:#5522aa;
-  --border:rgba(210,170,255,0.30); --border2:rgba(210,170,255,0.55);
-  --text:#ffffff; --text2:#f5eeff; --text3:#d0b8ff;
-  --accent:#c060ff; --accent-bright:#e090ff; --accent-dim:rgba(192,96,255,0.28);
+  --bg:#0f0525; --bg2:#1a0a40; --bg3:#2e1070; --bg4:#4418a0;
+  --border:rgba(220,180,255,0.35); --border2:rgba(220,180,255,0.60);
+  --text:#ffffff; --text2:#ffffff; --text3:#dcc8ff;
+  --accent:#c060ff; --accent-bright:#e090ff; --accent-dim:rgba(192,96,255,0.30);
   --accent-hover:#d070ff;
   --new-bg:rgba(99,102,241,0.2); --new-cl:#a5b4fc;
   --contacted-bg:rgba(14,165,233,0.2); --contacted-cl:#7dd3fc;
@@ -38,14 +38,14 @@ select option{background:#3c2268;color:#fff}
 .btn:hover{background:var(--bg4);color:var(--text);border-color:var(--accent)}
 .btn-accent{background:var(--accent);color:#fff;border-color:var(--accent);font-weight:600}
 .btn-accent:hover{background:var(--accent-hover);border-color:var(--accent-hover)}
+.btn-green{background:rgba(34,197,94,0.15);color:#86efac;border-color:rgba(34,197,94,0.4);font-weight:600}
+.btn-green:hover{background:rgba(34,197,94,0.25);border-color:#86efac}
 .btn-ghost{background:transparent;border-color:transparent;color:var(--text3);padding:6px 10px}
 .btn-ghost:hover{background:var(--bg3);color:var(--text);border-color:transparent}
-.btn-danger{color:#fca5a5;border-color:rgba(239,68,68,.3);background:transparent}
-.btn-danger:hover{background:var(--dead-bg)}
 .btn-sm{font-size:11px;padding:4px 10px}
 .btn:disabled{opacity:.35;cursor:not-allowed}
 
-#login-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--bg);background-image:radial-gradient(ellipse at 30% 40%,rgba(168,85,247,0.35) 0%,transparent 60%),radial-gradient(ellipse at 75% 70%,rgba(99,102,241,0.2) 0%,transparent 50%)}
+#login-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--bg);background-image:radial-gradient(ellipse at 30% 40%,rgba(192,96,255,0.35) 0%,transparent 60%),radial-gradient(ellipse at 75% 70%,rgba(99,102,241,0.2) 0%,transparent 50%)}
 .login-card{width:100%;max-width:380px;padding:2.5rem;background:var(--bg2);border:0.5px solid var(--border2);border-radius:var(--radius-xl);box-shadow:var(--shadow-lg);animation:fadeUp .4s ease}
 .login-logo{margin-bottom:2rem}
 .login-logo .brand{font-size:11px;font-weight:500;color:var(--text3);letter-spacing:.12em;text-transform:uppercase;margin-bottom:6px}
@@ -53,7 +53,6 @@ select option{background:#3c2268;color:#fff}
 .login-logo .dot{color:var(--accent-bright)}
 .login-err{color:#fca5a5;font-size:12px;margin-top:8px;display:none}
 .login-footer{margin-top:1.5rem;font-size:11px;color:var(--text3);text-align:center}
-
 #loading-screen{min-height:100vh;display:none;align-items:center;justify-content:center;background:var(--bg);flex-direction:column;gap:16px}
 #loading-screen.on{display:flex}
 .spinner{width:32px;height:32px;border:2px solid var(--border2);border-top-color:var(--accent-bright);border-radius:50%;animation:spin .7s linear infinite}
@@ -61,7 +60,7 @@ select option{background:#3c2268;color:#fff}
 
 #app{display:none;height:100vh;flex-direction:column}
 #app.on{display:flex}
-.topbar{height:56px;background:var(--bg2);border-bottom:1px solid var(--border2);display:flex;align-items:center;padding:0 1.5rem;gap:1rem;flex-shrink:0;z-index:10;position:relative}
+.topbar{height:56px;background:#1e0850;border-bottom:1px solid var(--border2);display:flex;align-items:center;padding:0 1.5rem;gap:1rem;flex-shrink:0;z-index:10;position:relative}
 .topbar-brand{font-size:15px;font-weight:700;color:#fff;display:flex;align-items:center;gap:10px;letter-spacing:-.3px}
 .topbar-brand .frog{font-size:20px}
 .topbar-nav{display:flex;gap:2px;margin-left:1.5rem}
@@ -81,7 +80,9 @@ select option{background:#3c2268;color:#fff}
 
 .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--bg2);border:1px solid var(--accent);color:var(--accent-bright);font-size:13px;font-family:'DM Sans',sans-serif;padding:10px 24px;border-radius:20px;z-index:9999;font-weight:500;animation:fadeUp .3s ease;white-space:nowrap}
 .toast.error{border-color:#fca5a5;color:#fca5a5}
+.toast.success{border-color:#86efac;color:#86efac}
 
+/* DASHBOARD */
 .dashboard{padding:1.5rem;overflow-y:auto}
 .dash-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;flex-wrap:wrap;gap:10px}
 .dash-header h2{font-size:18px;font-weight:600;color:#fff}
@@ -94,10 +95,10 @@ select option{background:#3c2268;color:#fff}
 .dash-stat-sub{font-size:12px;color:var(--text3);margin-top:8px}
 .dash-charts{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:1.5rem}
 .chart-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1.25rem}
-.chart-card h3{font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:1rem}
+.chart-card h3{font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:1rem}
 .chart-wrap{position:relative;height:200px}
 .recent-activity{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1.25rem}
-.recent-activity h3{font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:1rem}
+.recent-activity h3{font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:1rem}
 .activity-item{display:flex;gap:12px;padding:8px 0;border-bottom:0.5px solid var(--border);align-items:flex-start}
 .activity-item:last-child{border-bottom:none}
 .activity-dot{width:6px;height:6px;border-radius:50%;background:var(--accent-bright);margin-top:5px;flex-shrink:0}
@@ -112,6 +113,15 @@ select option{background:#3c2268;color:#fff}
 .rep-stat{font-size:11px;color:var(--text3);display:flex;justify-content:space-between;margin-top:3px}
 .rep-stat span:last-child{color:var(--text2);font-weight:500}
 
+/* FOLLOWUP WIDGET */
+.followup-widget{background:var(--bg2);border:1px solid rgba(252,211,77,0.4);border-radius:var(--radius-lg);padding:1.25rem;margin-bottom:1.5rem;position:relative;overflow:hidden}
+.followup-widget::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,#fcd34d,#fbbf24);opacity:.8}
+.followup-item{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:0.5px solid var(--border);cursor:pointer;transition:background .1s;border-radius:var(--radius);margin:0 -8px;padding-left:8px;padding-right:8px}
+.followup-item:last-child{border-bottom:none}
+.followup-item:hover{background:rgba(252,211,77,0.05)}
+.followup-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+
+/* LIST */
 .list-view{padding:1.5rem;display:flex;flex-direction:column;gap:.75rem;overflow:hidden}
 .list-toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .filter-pills{display:flex;gap:5px;flex-wrap:wrap}
@@ -121,13 +131,13 @@ select option{background:#3c2268;color:#fff}
 .rep-pills{display:flex;gap:5px;flex-wrap:wrap;align-items:center}
 .rep-pill{font-family:'DM Sans',sans-serif;font-size:11px;padding:4px 12px;border-radius:20px;border:0.5px solid var(--border2);cursor:pointer;background:transparent;color:var(--text3);transition:all .15s;font-weight:500;display:flex;align-items:center;gap:5px}
 .rep-pill:hover{color:var(--text2);border-color:var(--accent)}
-.rep-pill.on{background:rgba(168,85,247,.25);border-color:var(--accent-bright);color:#fff}
+.rep-pill.on{background:rgba(192,96,255,.25);border-color:var(--accent-bright);color:#fff}
 .table-wrap{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:auto;flex:1}
-table{width:100%;border-collapse:collapse;min-width:860px}
+table{width:100%;border-collapse:collapse;min-width:920px}
 th{padding:10px 14px;text-align:left;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.09em;background:var(--bg3);border-bottom:1px solid var(--border2);white-space:nowrap;user-select:none}
 td{padding:10px 14px;font-size:13px;font-weight:500;color:var(--text2);border-bottom:0.5px solid var(--border);transition:background .1s}
 tr:last-child td{border-bottom:none}
-tr:hover td{background:rgba(168,85,247,0.05)}
+tr:hover td{background:rgba(192,96,255,0.05)}
 .td-name{font-weight:600;color:#fff;cursor:pointer}
 .td-name:hover{color:var(--accent-bright)}
 .td-company{color:#fff}
@@ -135,8 +145,13 @@ tr:hover td{background:rgba(168,85,247,0.05)}
 .overdue{color:#fca5a5;font-weight:600}
 .due-soon{color:#fcd34d}
 .stage-select{font-size:11px;padding:3px 8px;border-radius:20px;width:auto;font-family:'DM Mono',monospace;font-weight:600;cursor:pointer;border:0.5px solid transparent}
+.contact-btn{font-family:'DM Sans',sans-serif;font-size:10px;padding:3px 8px;border-radius:6px;border:0.5px solid rgba(34,197,94,0.4);cursor:pointer;background:rgba(34,197,94,0.1);color:#86efac;font-weight:600;transition:all .15s;white-space:nowrap}
+.contact-btn:hover{background:rgba(34,197,94,0.2);border-color:#86efac}
 
-.kanban-container{padding:1.5rem;overflow-x:auto;overflow-y:hidden;flex:1}
+/* KANBAN */
+.kanban-wrap{display:flex;flex-direction:column;flex:1;overflow:hidden}
+.kanban-toolbar{padding:.75rem 1.5rem 0;display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.kanban-container{padding:1rem 1.5rem 1.5rem;overflow-x:auto;overflow-y:hidden;flex:1}
 .kanban-board{display:flex;gap:12px;height:100%;min-width:max-content}
 .kanban-col{width:240px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);display:flex;flex-direction:column;flex-shrink:0;transition:border-color .2s}
 .kanban-col.drag-over{border-color:var(--accent-bright);background:var(--accent-dim)}
@@ -147,7 +162,7 @@ tr:hover td{background:rgba(168,85,247,0.05)}
 .kanban-count{font-size:10px;font-family:'DM Mono',monospace;color:var(--text3);background:var(--bg3);padding:2px 8px;border-radius:10px}
 .kanban-cards{padding:10px;overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:8px;min-height:80px}
 .kcard{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:12px;cursor:grab;transition:all .15s;user-select:none}
-.kcard:hover{border-color:var(--accent);transform:translateY(-1px);box-shadow:0 4px 20px rgba(168,85,247,0.2)}
+.kcard:hover{border-color:var(--accent);transform:translateY(-1px);box-shadow:0 4px 20px rgba(192,96,255,0.2)}
 .kcard.dragging{opacity:.4;cursor:grabbing}
 .kcard-name{font-size:13px;font-weight:600;color:#fff;margin-bottom:3px}
 .kcard-company{font-size:11px;color:var(--text3);margin-bottom:8px}
@@ -158,6 +173,7 @@ tr:hover td{background:rgba(168,85,247,0.05)}
 .kcard-followup.due-soon{color:#fcd34d}
 .kcard-note{font-size:11px;color:var(--text3);margin-top:8px;padding-top:8px;border-top:0.5px solid var(--border);line-height:1.4;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
 
+/* MODAL */
 .modal-overlay{position:fixed;inset:0;background:rgba(10,5,20,0.8);z-index:1000;display:none;align-items:center;justify-content:center;padding:1rem;backdrop-filter:blur(8px)}
 .modal-overlay.on{display:flex;animation:fadeIn .2s ease}
 .modal{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--radius-xl);width:100%;max-width:620px;max-height:90vh;display:flex;flex-direction:column;box-shadow:var(--shadow-lg);animation:slideUp .25s ease}
@@ -170,12 +186,12 @@ tr:hover td{background:rgba(168,85,247,0.05)}
 .modal-tab{font-family:'DM Sans',sans-serif;font-size:12px;padding:6px 14px;border-radius:6px;border:none;cursor:pointer;background:transparent;color:var(--text3);flex:1;transition:all .15s;font-weight:500}
 .modal-tab.on{background:var(--bg4);color:#fff}
 .detail-val{font-size:13px;color:var(--text2);padding:9px 12px;background:var(--bg3);border-radius:var(--radius);border:0.5px solid var(--border)}
-.detail-label{font-size:10px;color:var(--text3);margin-top:4px;text-transform:uppercase;letter-spacing:.07em;font-weight:500}
 .timeline{position:relative}
 .timeline::before{content:'';position:absolute;left:11px;top:0;bottom:0;width:1px;background:var(--border2)}
 .tl-item{display:flex;gap:14px;margin-bottom:1.25rem;position:relative}
 .tl-dot{width:24px;height:24px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:11px;border:1px solid var(--border2);background:var(--bg3);z-index:1;color:var(--text3)}
 .tl-dot.status{background:var(--accent-dim);border-color:var(--accent);color:var(--accent-bright)}
+.tl-dot.contact{background:rgba(34,197,94,.15);border-color:rgba(34,197,94,.4);color:#86efac}
 .tl-dot.created{background:rgba(99,102,241,.15);border-color:rgba(99,102,241,.4);color:#a5b4fc}
 .tl-content{flex:1;padding-bottom:1rem;border-bottom:0.5px solid var(--border)}
 .tl-item:last-child .tl-content{border-bottom:none}
@@ -191,7 +207,12 @@ tr:hover td{background:rgba(168,85,247,0.05)}
 .fg label{font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.06em}
 .import-drop{border:1.5px dashed var(--border2);border-radius:var(--radius-lg);padding:2.5rem;text-align:center;transition:all .2s;cursor:pointer}
 .import-drop:hover,.import-drop.drag-over{border-color:var(--accent-bright);background:var(--accent-dim)}
-.section-label{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px}
+.section-label{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.1em}
+.collapsible-header{display:flex;align-items:center;justify-content:space-between;cursor:pointer;padding:10px 0;border-top:0.5px solid var(--border);user-select:none}
+.collapsible-header:hover .collapsible-title{color:#fff}
+.collapsible-title{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;transition:color .15s}
+.collapsible-arrow{font-size:11px;color:var(--text3);transition:transform .2s}
+.collapsible-arrow.open{transform:rotate(180deg)}
 
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
 @keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
@@ -202,11 +223,10 @@ tr:hover td{background:rgba(168,85,247,0.05)}
   .topbar{height:auto;flex-wrap:wrap;padding:.6rem .75rem;gap:.4rem;position:sticky;top:0;z-index:50}
   .topbar-brand{font-size:13px;order:1}
   .topbar-right{order:2;margin-left:auto;gap:6px}
-  .topbar-right .btn-sm{font-size:11px;padding:4px 8px}
   .search-wrap{display:none}
   .topbar-nav{order:4;width:100%;display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;margin-left:0}
   .nav-btn{font-size:12px;padding:7px 4px;text-align:center;border-radius:var(--radius);background:var(--bg3);border:0.5px solid var(--border)}
-  .nav-btn.on{background:var(--accent-dim);color:var(--accent-bright)}
+  .nav-btn.on{background:var(--accent-dim);color:#fff}
   .topbar-center{order:3;width:100%;position:static;transform:none}
   .topbar-center .btn{width:100%;padding:10px;font-size:14px;border-radius:var(--radius);margin:2px 0}
   .dashboard{padding:.75rem}
@@ -216,7 +236,7 @@ tr:hover td{background:rgba(168,85,247,0.05)}
   .dash-charts{grid-template-columns:1fr;gap:8px}
   .rep-grid{grid-template-columns:1fr 1fr;gap:8px}
   .modal-overlay{padding:0;align-items:flex-end}
-  .modal{max-width:100%;width:100%;max-height:92vh;border-radius:var(--radius-lg) var(--radius-lg) 0 0;animation:slideUp .25s ease}
+  .modal{max-width:100%;width:100%;max-height:92vh;border-radius:var(--radius-lg) var(--radius-lg) 0 0}
   .modal-body{padding:1rem}
   .modal-header{padding:.875rem 1rem}
   .modal-footer{padding:.75rem 1rem}
@@ -257,10 +277,10 @@ tr:hover td{background:rgba(168,85,247,0.05)}
 
 <div id="app">
   <div class="topbar">
-    <div class="topbar-brand"><span class="frog">🐸</span>Indar Tracker</div>
+    <div class="topbar-brand" onclick="showView('list')" style="cursor:pointer"><span class="frog">🐸</span>Indar Tracker</div>
     <nav class="topbar-nav">
-      <button class="nav-btn on" onclick="showView('dashboard')">Dashboard</button>
       <button class="nav-btn" onclick="showView('list')">List</button>
+      <button class="nav-btn" onclick="showView('dashboard')">Dashboard</button>
       <button class="nav-btn" onclick="showView('kanban')">Leads View</button>
     </nav>
     <div class="topbar-center">
@@ -271,13 +291,12 @@ tr:hover td{background:rgba(168,85,247,0.05)}
         <span class="search-icon">⌕</span>
         <input id="global-search" placeholder="Search leads..." oninput="onSearch()">
       </div>
-      <button class="btn btn-sm" onclick="openImportModal()" style="color:var(--text3)">↑ Import CSV</button>
+      <button class="btn btn-ghost btn-sm" onclick="openImportModal()" title="Import CSV" style="font-size:18px;padding:4px 8px;opacity:.7">⚙</button>
       <div class="user-badge" id="user-badge" title="Sign out" onclick="logout()">?</div>
     </div>
   </div>
   <div class="main-content">
-    <div class="panel on" id="panel-dashboard"><div class="dashboard" id="dashboard-content"></div></div>
-    <div class="panel" id="panel-list">
+    <div class="panel on" id="panel-list">
       <div class="list-view">
         <div class="list-toolbar">
           <div class="filter-pills" id="filter-pills"></div>
@@ -306,8 +325,15 @@ tr:hover td{background:rgba(168,85,247,0.05)}
         </div>
       </div>
     </div>
+    <div class="panel" id="panel-dashboard"><div class="dashboard" id="dashboard-content"></div></div>
     <div class="panel" id="panel-kanban">
-      <div class="kanban-container"><div class="kanban-board" id="kanban-board"></div></div>
+      <div class="kanban-wrap">
+        <div class="kanban-toolbar">
+          <span style="font-size:11px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:.07em">Filter:</span>
+          <div id="kanban-rep-pills" style="display:flex;gap:5px;flex-wrap:wrap"></div>
+        </div>
+        <div class="kanban-container"><div class="kanban-board" id="kanban-board"></div></div>
+      </div>
     </div>
   </div>
 </div>
@@ -352,13 +378,9 @@ tr:hover td{background:rgba(168,85,247,0.05)}
         <div class="form-grid-4" style="margin-bottom:10px">
           <div class="fg"><label>Stage</label>
             <select id="f-status">
-              <option value="new">New</option>
-              <option value="contacted">Contacted</option>
-              <option value="samples_progress">Samples in Progress</option>
-              <option value="samples_sent">Samples Sent</option>
-              <option value="estimate_sent">Estimate Sent</option>
-              <option value="closed">Closed</option>
-              <option value="dead">Dead</option>
+              <option value="new">New</option><option value="contacted">Contacted</option>
+              <option value="samples_progress">Samples in Progress</option><option value="samples_sent">Samples Sent</option>
+              <option value="estimate_sent">Estimate Sent</option><option value="closed">Closed</option><option value="dead">Dead</option>
             </select>
           </div>
           <div class="fg"><label>Assign to rep</label><select id="f-rep"><option value="">Unassigned</option></select></div>
@@ -429,35 +451,29 @@ let charts = {}, importPreviewData = [];
 // ---- DB ----
 function dbToLead(row) {
   return {
-    id: row.id,
-    firstName: row.first_name||"", lastName: row.last_name||"",
-    email: row.email||"", phone: row.phone||"",
-    company: row.company||"", vertical: row.vertical||"", title: row.title||"",
-    status: row.status||"new", rep: row.rep||"",
-    followup: row.followup||"", value: row.value||"", dateAdded: row.date_added||"",
-    activity: row.activity||[],
-    lead_date: row.lead_date||"", closed_date: row.closed_date||"",
-    last_contact_date: row.last_contact_date||"",
-    deal_notes: row.deal_notes||"",
-    estimates: Array.isArray(row.estimates) ? row.estimates : [],
-    invoices: Array.isArray(row.invoices) ? row.invoices : []
+    id:row.id, firstName:row.first_name||"", lastName:row.last_name||"",
+    email:row.email||"", phone:row.phone||"", company:row.company||"",
+    vertical:row.vertical||"", title:row.title||"", status:row.status||"new",
+    rep:row.rep||"", followup:row.followup||"", value:row.value||"",
+    dateAdded:row.date_added||"", activity:row.activity||[],
+    lead_date:row.lead_date||"", closed_date:row.closed_date||"",
+    last_contact_date:row.last_contact_date||"", deal_notes:row.deal_notes||"",
+    estimates:Array.isArray(row.estimates)?row.estimates:[],
+    invoices:Array.isArray(row.invoices)?row.invoices:[]
   };
 }
 function leadToDb(l) {
   return {
-    id:l.id, first_name:l.firstName, last_name:l.lastName,
-    email:l.email, phone:l.phone, company:l.company,
-    vertical:l.vertical, title:l.title, status:l.status,
-    rep:l.rep, followup:l.followup, value:l.value,
-    date_added:l.dateAdded, activity:l.activity,
-    lead_date:l.lead_date||"", closed_date:l.closed_date||"",
-    last_contact_date:l.last_contact_date||"",
-    deal_notes:l.deal_notes||"",
-    estimates:l.estimates||[], invoices:l.invoices||[]
+    id:l.id, first_name:l.firstName, last_name:l.lastName, email:l.email,
+    phone:l.phone, company:l.company, vertical:l.vertical, title:l.title,
+    status:l.status, rep:l.rep, followup:l.followup, value:l.value,
+    date_added:l.dateAdded, activity:l.activity, lead_date:l.lead_date||"",
+    closed_date:l.closed_date||"", last_contact_date:l.last_contact_date||"",
+    deal_notes:l.deal_notes||"", estimates:l.estimates||[], invoices:l.invoices||[]
   };
 }
 async function dbLoadAll() {
-  const [lr, rr] = await Promise.all([
+  const [lr,rr] = await Promise.all([
     sb.from("leads").select("*").order("created_at",{ascending:false}),
     sb.from("reps").select("*").order("name")
   ]);
@@ -468,25 +484,21 @@ async function dbLoadAll() {
 }
 async function dbSaveLead(lead) {
   const {error} = await sb.from("leads").upsert(leadToDb(lead));
-  if (error) { showToast("Save failed: "+error.message, true); throw error; }
+  if (error) { showToast("Save failed: "+error.message,true); throw error; }
 }
 async function dbDeleteLead(id) {
   const {error} = await sb.from("leads").delete().eq("id",id);
-  if (error) { showToast("Delete failed: "+error.message, true); throw error; }
+  if (error) { showToast("Delete failed: "+error.message,true); throw error; }
 }
 async function dbAddRep(name) {
   const {error} = await sb.from("reps").insert({name});
-  if (error && !error.message.includes("unique")) { showToast("Failed to add rep",true); throw error; }
-}
-async function dbRemoveRep(name) {
-  const {error} = await sb.from("reps").delete().eq("name",name);
-  if (error) { showToast("Failed to remove rep",true); throw error; }
+  if (error&&!error.message.includes("unique")) { showToast("Failed to add rep",true); throw error; }
 }
 
 // ---- AUTH ----
 function doLogin() {
   const pw = document.getElementById("pw-input").value;
-  if (pw === TEAM_PASSWORD) {
+  if (pw===TEAM_PASSWORD) {
     currentUser = "ME";
     sessionStorage.setItem(SESSION_KEY,"true");
     document.getElementById("login-screen").style.display = "none";
@@ -505,7 +517,8 @@ async function loadAndStart() {
     document.getElementById("app").classList.add("on");
     document.getElementById("user-badge").textContent = "ME";
     populateRepSelects();
-    showView("dashboard");
+    // Default to list on mobile, list on desktop too
+    showView("list");
   } catch(e) {
     document.getElementById("loading-screen").classList.remove("on");
     document.getElementById("login-screen").style.display = "flex";
@@ -522,7 +535,7 @@ function logout() {
     leads = []; reps = [];
   }
 }
-window.addEventListener("DOMContentLoaded", () => {
+window.addEventListener("DOMContentLoaded",()=>{
   if (sessionStorage.getItem(SESSION_KEY)) {
     currentUser = "ME";
     document.getElementById("login-screen").style.display = "none";
@@ -535,46 +548,57 @@ window.addEventListener("DOMContentLoaded", () => {
 // ---- UTILS ----
 function uid() { return Date.now().toString(36)+Math.random().toString(36).slice(2); }
 function today() { return new Date().toISOString().slice(0,10); }
+function weekEnd() { const d=new Date(); d.setDate(d.getDate()+(6-d.getDay())); return d.toISOString().slice(0,10); }
 function now() { return new Date().toLocaleString("en-US",{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"}); }
 function fmtDate(d) { if(!d) return "—"; const[y,m,day]=d.split("-"); return m+"/"+day+"/"+y.slice(2); }
 function fcClass(d) { if(!d) return ""; const diff=(new Date(d)-new Date(today()))/86400000; if(diff<0) return "overdue"; if(diff<=3) return "due-soon"; return ""; }
 function repInitials(name) { if(!name) return "?"; return name.split(" ").map(w=>w[0]).join("").toUpperCase().slice(0,2); }
-function showToast(msg, isError) {
+function showToast(msg,isError,isSuccess) {
   const t = document.createElement("div");
-  t.className = "toast"+(isError?" error":""); t.textContent = msg;
-  document.body.appendChild(t); setTimeout(()=>t.remove(),3000);
+  t.className = "toast"+(isError?" error":isSuccess?" success":"");
+  t.textContent = msg; document.body.appendChild(t); setTimeout(()=>t.remove(),3000);
 }
-function addActivity(lead, type, text) {
+function addActivity(lead,type,text) {
   if (!lead.activity) lead.activity = [];
   lead.activity.push({id:uid(),type,text,author:currentUser||"me",ts:now()});
 }
 function populateRepSelects() {
   const opts = '<option value="">Unassigned</option>'+reps.map(r=>`<option value="${r}">${r}</option>`).join("");
-  ["f-rep","e-rep"].forEach(id=>{ const el=document.getElementById(id); if(el) el.innerHTML=opts; });
+  ["f-rep","e-rep"].forEach(id=>{const el=document.getElementById(id);if(el)el.innerHTML=opts;});
   renderRepPills();
+  renderKanbanRepPills();
 }
 function renderRepPills() {
   const c = document.getElementById("rep-pills"); if(!c) return;
   if (!reps.length) { c.innerHTML=""; return; }
+  const counts = {};
+  reps.forEach(r=>{ counts[r]=leads.filter(l=>l.rep===r).length; });
   c.innerHTML = `<span style="font-size:11px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:.07em">My leads:</span>`
-    + reps.map(r=>`<button class="rep-pill${filterRep===r?" on":""}" onclick="setRepFilter('${r}')"><span style="width:16px;height:16px;border-radius:50%;background:var(--accent-dim);border:1px solid var(--accent);display:inline-flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:var(--accent-bright)">${repInitials(r)}</span>${r}</button>`).join("")
-    + (filterRep?`<button class="rep-pill" onclick="setRepFilter('')" style="color:#fca5a5;border-color:rgba(239,68,68,.3)">✕ Clear</button>`:"");
+    +reps.map(r=>`<button class="rep-pill${filterRep===r?" on":""}" onclick="setRepFilter('${r}')"><span style="width:16px;height:16px;border-radius:50%;background:var(--accent-dim);border:1px solid var(--accent);display:inline-flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:var(--accent-bright)">${repInitials(r)}</span>${r} <span style="opacity:.7">(${counts[r]||0})</span></button>`).join("")
+    +(filterRep?`<button class="rep-pill" onclick="setRepFilter('')" style="color:#fca5a5;border-color:rgba(239,68,68,.3)">✕ Clear</button>`:"");
 }
-function setRepFilter(r) { filterRep = r; renderRepPills(); renderList(); }
+function renderKanbanRepPills() {
+  const c = document.getElementById("kanban-rep-pills"); if(!c) return;
+  if (!reps.length) { c.innerHTML='<span style="font-size:11px;color:var(--text3)">All reps</span>'; return; }
+  c.innerHTML = `<button class="rep-pill${!filterRep?" on":""}" onclick="setRepFilterKanban('')">All</button>`
+    +reps.map(r=>`<button class="rep-pill${filterRep===r?" on":""}" onclick="setRepFilterKanban('${r}')"><span style="width:16px;height:16px;border-radius:50%;background:var(--accent-dim);border:1px solid var(--accent);display:inline-flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:var(--accent-bright)">${repInitials(r)}</span>${r}</button>`).join("");
+}
+function setRepFilter(r) { filterRep=r; renderRepPills(); renderList(); }
+function setRepFilterKanban(r) { filterRep=r; renderKanbanRepPills(); renderKanban(); }
 
 // ---- VIEWS ----
 function showView(name) {
   document.querySelectorAll(".panel").forEach(p=>p.classList.remove("on"));
   document.querySelectorAll(".nav-btn").forEach(b=>b.classList.remove("on"));
   document.getElementById("panel-"+name).classList.add("on");
-  [{k:"dashboard",i:0},{k:"list",i:1},{k:"kanban",i:2}].forEach(v=>{ if(v.k===name) document.querySelectorAll(".nav-btn")[v.i]?.classList.add("on"); });
+  [{k:"list",i:0},{k:"dashboard",i:1},{k:"kanban",i:2}].forEach(v=>{if(v.k===name) document.querySelectorAll(".nav-btn")[v.i]?.classList.add("on");});
   if (name==="dashboard") renderDashboard();
   if (name==="list") renderList();
   if (name==="kanban") renderKanban();
 }
-function onSearch() { searchQ = document.getElementById("global-search").value.toLowerCase(); render(); }
+function onSearch() { searchQ=document.getElementById("global-search").value.toLowerCase(); render(); }
 function render() {
-  const v = document.querySelector(".panel.on"); if(!v) return;
+  const v=document.querySelector(".panel.on"); if(!v) return;
   if (v.id==="panel-dashboard") renderDashboard();
   if (v.id==="panel-list") renderList();
   if (v.id==="panel-kanban") renderKanban();
@@ -582,74 +606,76 @@ function render() {
 
 // ---- DASHBOARD ----
 function renderDashboard() {
-  const total = leads.length;
-  const closed = leads.filter(l=>l.status==="closed").length;
-  const active = leads.filter(l=>!["dead","closed"].includes(l.status)).length;
-  const overdue = leads.filter(l=>l.followup&&l.followup<today()&&l.status!=="dead").length;
-  const closedVal = leads.filter(l=>l.status==="closed").reduce((s,l)=>s+(parseFloat(l.value)||0),0);
-  const pipeVal = leads.filter(l=>l.status!=="dead").reduce((s,l)=>s+(parseFloat(l.value)||0),0);
-  const totalLTV = leads.reduce((s,l)=>s+(l.invoices||[]).reduce((si,inv)=>si+(parseFloat(inv.amount)||0),0),0);
-  const repStats = reps.map(r=>{
-    const rl = leads.filter(l=>l.rep===r);
-    const ltv = rl.reduce((s,l)=>s+(l.invoices||[]).reduce((si,inv)=>si+(parseFloat(inv.amount)||0),0),0);
-    return {name:r, total:rl.length, closed:rl.filter(l=>l.status==="closed").length, value:rl.filter(l=>l.status==="closed").reduce((s,l)=>s+(parseFloat(l.value)||0),0), ltv};
+  const total=leads.length;
+  const closed=leads.filter(l=>l.status==="closed").length;
+  const active=leads.filter(l=>!["dead","closed"].includes(l.status)).length;
+  const overdue=leads.filter(l=>l.followup&&l.followup<today()&&l.status!=="dead").length;
+  const closedVal=leads.filter(l=>l.status==="closed").reduce((s,l)=>s+(parseFloat(l.value)||0),0);
+  const pipeVal=leads.filter(l=>l.status!=="dead").reduce((s,l)=>s+(parseFloat(l.value)||0),0);
+  const totalLTV=leads.reduce((s,l)=>s+(l.invoices||[]).reduce((si,inv)=>si+(parseFloat(inv.amount)||0),0),0);
+  // New accounts = unique leads that have at least one invoice (each lead = one customer regardless of invoice count)
+  const newAccounts=leads.filter(l=>(l.invoices||[]).length>0).length;
+  const repStats=reps.map(r=>{
+    const rl=leads.filter(l=>l.rep===r);
+    const ltv=rl.reduce((s,l)=>s+(l.invoices||[]).reduce((si,inv)=>si+(parseFloat(inv.amount)||0),0),0);
+    return {name:r,total:rl.length,closed:rl.filter(l=>l.status==="closed").length,value:rl.filter(l=>l.status==="closed").reduce((s,l)=>s+(parseFloat(l.value)||0),0),ltv};
   });
 
-  // Build flat lists of all estimates and invoices across all leads
-  const allEstimates = [];
-  const allInvoices = [];
-  leads.forEach(l => {
-    (l.estimates||[]).forEach(e => allEstimates.push({...e, leadId:l.id, leadName:`${l.firstName} ${l.lastName||""}`.trim(), company:l.company, rep:l.rep}));
-    (l.invoices||[]).forEach(inv => allInvoices.push({...inv, leadId:l.id, leadName:`${l.firstName} ${l.lastName||""}`.trim(), company:l.company, rep:l.rep}));
+  // This week's follow-ups
+  const we = weekEnd();
+  const thisWeek = leads.filter(l=>l.followup&&l.followup<=we&&l.status!=="dead").sort((a,b)=>a.followup.localeCompare(b.followup));
+
+  const allEstimates=[]; const allInvoices=[];
+  leads.forEach(l=>{
+    (l.estimates||[]).forEach(e=>allEstimates.push({...e,leadId:l.id,leadName:`${l.firstName} ${l.lastName||""}`.trim(),company:l.company,rep:l.rep}));
+    (l.invoices||[]).forEach(inv=>allInvoices.push({...inv,leadId:l.id,leadName:`${l.firstName} ${l.lastName||""}`.trim(),company:l.company,rep:l.rep}));
   });
   allEstimates.sort((a,b)=>(b.date||"0").localeCompare(a.date||"0"));
   allInvoices.sort((a,b)=>(b.date||"0").localeCompare(a.date||"0"));
-  const totalEstimates = allEstimates.reduce((s,e)=>s+(parseFloat(e.amount)||0),0);
+  const totalEstimates=allEstimates.reduce((s,e)=>s+(parseFloat(e.amount)||0),0);
 
-  const estRows = allEstimates.length ? allEstimates.map(e=>`
-    <tr onclick="openLead('${e.leadId}')" style="cursor:pointer">
-      <td style="padding:9px 12px;font-size:13px;font-weight:600;color:#fff;border-bottom:0.5px solid var(--border)">${e.leadName}</td>
-      <td style="padding:9px 12px;font-size:12px;color:var(--text3);border-bottom:0.5px solid var(--border)">${e.company}</td>
-      <td style="padding:9px 12px;font-size:12px;color:var(--text2);border-bottom:0.5px solid var(--border)">${e.num||"—"}</td>
-      <td style="padding:9px 12px;font-size:13px;font-weight:700;color:#fcd34d;font-family:'DM Mono',monospace;text-align:right;border-bottom:0.5px solid var(--border)">$${parseFloat(e.amount||0).toLocaleString()}</td>
-      <td style="padding:9px 12px;font-size:11px;color:var(--text3);border-bottom:0.5px solid var(--border)">${e.date?fmtDate(e.date):"—"}</td>
-      <td style="padding:9px 12px;font-size:11px;color:var(--accent-bright);border-bottom:0.5px solid var(--border)">${e.rep||"—"}</td>
-    </tr>`).join("") : `<tr><td colspan="6" style="padding:1.5rem;text-align:center;font-size:12px;color:var(--text3)">No estimates yet.</td></tr>`;
+  const finTable=(rows,id)=>`<div style="border:1px solid var(--border);border-radius:var(--radius-lg);overflow:auto"><table style="width:100%;border-collapse:collapse;min-width:500px" id="${id}"><thead><tr style="background:var(--bg3)"><th style="padding:8px 12px;text-align:left;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;border-bottom:1px solid var(--border2)">Lead</th><th style="padding:8px 12px;text-align:left;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;border-bottom:1px solid var(--border2)">Company</th><th style="padding:8px 12px;text-align:left;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;border-bottom:1px solid var(--border2)">#</th><th style="padding:8px 12px;text-align:right;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;border-bottom:1px solid var(--border2)">Amount</th><th style="padding:8px 12px;text-align:left;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;border-bottom:1px solid var(--border2)">Date</th><th style="padding:8px 12px;text-align:left;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;border-bottom:1px solid var(--border2)">Rep</th></tr></thead><tbody>${rows}</tbody></table></div>`;
 
-  const invRows = allInvoices.length ? allInvoices.map(inv=>`
-    <tr onclick="openLead('${inv.leadId}')" style="cursor:pointer">
-      <td style="padding:9px 12px;font-size:13px;font-weight:600;color:#fff;border-bottom:0.5px solid var(--border)">${inv.leadName}</td>
-      <td style="padding:9px 12px;font-size:12px;color:var(--text3);border-bottom:0.5px solid var(--border)">${inv.company}</td>
-      <td style="padding:9px 12px;font-size:12px;color:var(--text2);border-bottom:0.5px solid var(--border)">${inv.num||"—"}</td>
-      <td style="padding:9px 12px;font-size:13px;font-weight:700;color:#86efac;font-family:'DM Mono',monospace;text-align:right;border-bottom:0.5px solid var(--border)">$${parseFloat(inv.amount||0).toLocaleString()}</td>
-      <td style="padding:9px 12px;font-size:11px;color:var(--text3);border-bottom:0.5px solid var(--border)">${inv.date?fmtDate(inv.date):"—"}</td>
-      <td style="padding:9px 12px;font-size:11px;color:var(--accent-bright);border-bottom:0.5px solid var(--border)">${inv.rep||"—"}</td>
-    </tr>`).join("") : `<tr><td colspan="6" style="padding:1.5rem;text-align:center;font-size:12px;color:var(--text3)">No invoices yet.</td></tr>`;
+  const estRows=allEstimates.length?allEstimates.map(e=>`<tr onclick="openLead('${e.leadId}')" style="cursor:pointer"><td style="padding:9px 12px;font-size:13px;font-weight:600;color:#fff;border-bottom:0.5px solid var(--border)">${e.leadName}</td><td style="padding:9px 12px;font-size:12px;color:var(--text3);border-bottom:0.5px solid var(--border)">${e.company}</td><td style="padding:9px 12px;font-size:12px;color:var(--text2);border-bottom:0.5px solid var(--border)">${e.num||"—"}</td><td style="padding:9px 12px;font-size:13px;font-weight:700;color:#fcd34d;font-family:'DM Mono',monospace;text-align:right;border-bottom:0.5px solid var(--border)">$${parseFloat(e.amount||0).toLocaleString()}</td><td style="padding:9px 12px;font-size:11px;color:var(--text3);border-bottom:0.5px solid var(--border)">${e.date?fmtDate(e.date):"—"}</td><td style="padding:9px 12px;font-size:11px;color:var(--accent-bright);border-bottom:0.5px solid var(--border)">${e.rep||"—"}</td></tr>`).join(""):`<tr><td colspan="6" style="padding:1.5rem;text-align:center;font-size:12px;color:var(--text3)">No estimates yet.</td></tr>`;
+  const invRows=allInvoices.length?allInvoices.map(inv=>`<tr onclick="openLead('${inv.leadId}')" style="cursor:pointer"><td style="padding:9px 12px;font-size:13px;font-weight:600;color:#fff;border-bottom:0.5px solid var(--border)">${inv.leadName}</td><td style="padding:9px 12px;font-size:12px;color:var(--text3);border-bottom:0.5px solid var(--border)">${inv.company}</td><td style="padding:9px 12px;font-size:12px;color:var(--text2);border-bottom:0.5px solid var(--border)">${inv.num||"—"}</td><td style="padding:9px 12px;font-size:13px;font-weight:700;color:#86efac;font-family:'DM Mono',monospace;text-align:right;border-bottom:0.5px solid var(--border)">$${parseFloat(inv.amount||0).toLocaleString()}</td><td style="padding:9px 12px;font-size:11px;color:var(--text3);border-bottom:0.5px solid var(--border)">${inv.date?fmtDate(inv.date):"—"}</td><td style="padding:9px 12px;font-size:11px;color:var(--accent-bright);border-bottom:0.5px solid var(--border)">${inv.rep||"—"}</td></tr>`).join(""):`<tr><td colspan="6" style="padding:1.5rem;text-align:center;font-size:12px;color:var(--text3)">No invoices yet.</td></tr>`;
 
-  const finTable = (rows, id) => `
-    <div style="border:1px solid var(--border);border-radius:var(--radius-lg);overflow:auto">
-      <table style="width:100%;border-collapse:collapse;min-width:500px" id="${id}">
-        <thead><tr style="background:var(--bg3)">
-          <th style="padding:8px 12px;text-align:left;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;border-bottom:1px solid var(--border2)">Lead</th>
-          <th style="padding:8px 12px;text-align:left;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;border-bottom:1px solid var(--border2)">Company</th>
-          <th style="padding:8px 12px;text-align:left;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;border-bottom:1px solid var(--border2)">#</th>
-          <th style="padding:8px 12px;text-align:right;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;border-bottom:1px solid var(--border2)">Amount</th>
-          <th style="padding:8px 12px;text-align:left;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;border-bottom:1px solid var(--border2)">Date</th>
-          <th style="padding:8px 12px;text-align:left;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;border-bottom:1px solid var(--border2)">Rep</th>
-        </tr></thead>
-        <tbody>${rows}</tbody>
-      </table>
-    </div>`;
-
-  document.getElementById("dashboard-content").innerHTML = `
+  document.getElementById("dashboard-content").innerHTML=`
     <div class="dash-header"><h2>Overview</h2><span style="font-size:11px;color:var(--text3)">Updated ${now()}</span></div>
-    <div class="dash-grid">
+
+    <!-- THIS WEEK'S FOLLOW-UPS -->
+    <div class="followup-widget">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:${thisWeek.length?'12px':'0'}">
+        <h3 style="font-size:13px;font-weight:700;color:#fcd34d;display:flex;align-items:center;gap:8px">📅 This week's follow-ups <span style="background:rgba(252,211,77,0.2);color:#fcd34d;font-size:11px;padding:2px 8px;border-radius:20px;font-family:'DM Mono',monospace">${thisWeek.length}</span></h3>
+        <button class="btn btn-ghost btn-sm" onclick="showView('list');setFilter('overdue')" style="font-size:11px;color:var(--text3)">View all overdue →</button>
+      </div>
+      ${thisWeek.length===0?`<p style="font-size:12px;color:var(--text3);padding:8px 0">No follow-ups due this week. 🎉</p>`:
+        thisWeek.slice(0,8).map(l=>{
+          const sc=STATUS_CFG[l.status]||STATUS_CFG.new;
+          const fc=fcClass(l.followup);
+          return `<div class="followup-item" onclick="openLead('${l.id}')">
+            <div class="followup-dot" style="background:${fc==='overdue'?'#fca5a5':fc==='due-soon'?'#fcd34d':'#86efac'}"></div>
+            <div style="flex:1;min-width:0">
+              <div style="font-size:13px;font-weight:600;color:#fff">${l.firstName} ${l.lastName||""} <span style="font-weight:400;color:var(--text3)">· ${l.company}</span></div>
+              <div style="display:flex;align-items:center;gap:8px;margin-top:3px;flex-wrap:wrap">
+                <span style="font-size:11px;font-family:'DM Mono',monospace;color:${fc==='overdue'?'#fca5a5':fc==='due-soon'?'#fcd34d':'var(--text3)'}">${fmtDate(l.followup)}</span>
+                <span class="sbadge" style="background:${sc.bg};color:${sc.cl};font-size:9px">${sc.label}</span>
+                ${l.rep?`<span style="font-size:11px;color:var(--accent-bright)">${l.rep}</span>`:""}
+              </div>
+            </div>
+            <span style="font-size:11px;color:var(--text3);flex-shrink:0">${fc==='overdue'?'⚠ Overdue':''}</span>
+          </div>`;
+        }).join("")}
+      ${thisWeek.length>8?`<p style="font-size:11px;color:var(--text3);margin-top:8px;text-align:center">+${thisWeek.length-8} more — <span style="cursor:pointer;color:var(--accent-bright)" onclick="showView('list')">view all</span></p>`:""}
+    </div>
+
+    <div class="dash-grid" style="grid-template-columns:repeat(4,1fr)">
       <div class="dash-stat"><div class="dash-stat-num">${total}</div><div class="dash-stat-label">Total leads</div><div class="dash-stat-sub">${active} active in pipeline</div></div>
       <div class="dash-stat"><div class="dash-stat-num" style="color:#86efac">${closed}</div><div class="dash-stat-label">Closed</div><div class="dash-stat-sub">$${closedVal.toLocaleString()} closed value</div></div>
-      <div class="dash-stat"><div class="dash-stat-num" style="color:${overdue>0?"#fca5a5":"#fff"}">${overdue}</div><div class="dash-stat-label">Overdue follow-ups</div><div class="dash-stat-sub">$${pipeVal.toLocaleString()} pipeline · $${totalLTV.toLocaleString()} LTV</div></div>
+      <div class="dash-stat"><div class="dash-stat-num" style="color:#c084fc">${newAccounts}</div><div class="dash-stat-label">New accounts</div><div class="dash-stat-sub">$${totalLTV.toLocaleString()} lifetime value</div></div>
+      <div class="dash-stat"><div class="dash-stat-num" style="color:${overdue>0?"#fca5a5":"#fff"}">${overdue}</div><div class="dash-stat-label">Overdue follow-ups</div><div class="dash-stat-sub">$${pipeVal.toLocaleString()} pipeline value</div></div>
     </div>
-    ${repStats.length>0?`
-    <div style="margin-bottom:1.5rem">
+
+    ${repStats.length>0?`<div style="margin-bottom:1.5rem">
       <p class="section-label" style="margin-bottom:10px">Reps</p>
       <div class="rep-grid">${repStats.map(r=>`<div class="rep-card" style="cursor:pointer" onclick="showView('list');setRepFilter('${r.name}')">
         <div class="rep-card-name"><span class="rep-avatar">${repInitials(r.name)}</span>${r.name}</div>
@@ -682,23 +708,25 @@ function renderDashboard() {
       <div class="chart-card"><h3>Leads by vertical</h3><div class="chart-wrap"><canvas id="chart-vertical"></canvas></div></div>
     </div>
     <div class="recent-activity"><h3>Recent activity</h3><div id="recent-list"></div></div>`;
+
   setTimeout(()=>{
     if (charts.pipeline) charts.pipeline.destroy();
-    const c1 = document.getElementById("chart-pipeline")?.getContext("2d");
-    if (c1) charts.pipeline = new Chart(c1,{type:"doughnut",data:{labels:STATUSES.map(s=>STATUS_CFG[s].label),datasets:[{data:STATUSES.map(s=>leads.filter(l=>l.status===s).length),backgroundColor:["#a5b4fc","#7dd3fc","#d8b4fe","#f9a8d4","#fcd34d","#86efac","#fca5a5"],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:"right",labels:{color:"#e0d6f8",font:{family:"DM Sans",size:11},padding:10,boxWidth:10}}},cutout:"65%"}});
+    const c1=document.getElementById("chart-pipeline")?.getContext("2d");
+    if (c1) charts.pipeline=new Chart(c1,{type:"doughnut",data:{labels:STATUSES.map(s=>STATUS_CFG[s].label),datasets:[{data:STATUSES.map(s=>leads.filter(l=>l.status===s).length),backgroundColor:["#a5b4fc","#7dd3fc","#d8b4fe","#f9a8d4","#fcd34d","#86efac","#fca5a5"],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:"right",labels:{color:"#f5eeff",font:{family:"DM Sans",size:11},padding:10,boxWidth:10}}},cutout:"65%"}});
     if (charts.vertical) charts.vertical.destroy();
     const verts={}; leads.forEach(l=>{const v=l.vertical||"Other";verts[v]=(verts[v]||0)+1;});
     const vKeys=Object.keys(verts).sort((a,b)=>verts[b]-verts[a]).slice(0,7);
-    const c2 = document.getElementById("chart-vertical")?.getContext("2d");
-    if (c2) charts.vertical = new Chart(c2,{type:"bar",data:{labels:vKeys,datasets:[{data:vKeys.map(k=>verts[k]),backgroundColor:"rgba(168,85,247,0.25)",borderColor:"#a855f7",borderWidth:1.5,borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:"#a898cc",font:{family:"DM Sans",size:10}},grid:{display:false},border:{display:false}},y:{ticks:{color:"#a898cc",font:{family:"DM Mono",size:10},stepSize:1},grid:{color:"rgba(168,85,247,0.08)"},border:{display:false}}}}});
+    const c2=document.getElementById("chart-vertical")?.getContext("2d");
+    if (c2) charts.vertical=new Chart(c2,{type:"bar",data:{labels:vKeys,datasets:[{data:vKeys.map(k=>verts[k]),backgroundColor:"rgba(192,96,255,0.25)",borderColor:"#c060ff",borderWidth:1.5,borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:"#d0b8ff",font:{family:"DM Sans",size:10}},grid:{display:false},border:{display:false}},y:{ticks:{color:"#d0b8ff",font:{family:"DM Mono",size:10},stepSize:1},grid:{color:"rgba(192,96,255,0.08)"},border:{display:false}}}}});
   },50);
+
   const allAct=[];
   leads.forEach(l=>(l.activity||[]).forEach(a=>allAct.push({...a,leadName:l.firstName+" "+(l.lastName||""),company:l.company})));
   allAct.sort((a,b)=>new Date(b.ts||0)-new Date(a.ts||0));
   const rl=document.getElementById("recent-list"); if(!rl) return;
   const recent=allAct.slice(0,8);
   if (!recent.length){rl.innerHTML='<p style="font-size:12px;color:var(--text3);padding:1rem 0">No activity yet.</p>';return;}
-  rl.innerHTML=recent.map(a=>`<div class="activity-item"><div class="activity-dot" style="background:${a.type==="status"?"#7dd3fc":"var(--accent-bright)"}"></div><div><div class="activity-text"><strong>${a.leadName}</strong> at ${a.company} — ${a.text}</div><div class="activity-time">${a.ts||""} · ${a.author||""}</div></div></div>`).join("");
+  rl.innerHTML=recent.map(a=>`<div class="activity-item"><div class="activity-dot" style="background:${a.type==="contact"?"#86efac":a.type==="status"?"#7dd3fc":"var(--accent-bright)"}"></div><div><div class="activity-text"><strong>${a.leadName}</strong> at ${a.company} — ${a.text}</div><div class="activity-time">${a.ts||""} · ${a.author||""}</div></div></div>`).join("");
 }
 
 // ---- LIST ----
@@ -733,7 +761,7 @@ function renderList() {
   tbody.innerHTML=fil.map(l=>{
     const sc=STATUS_CFG[l.status]||STATUS_CFG.new;
     const fc=fcClass(l.followup);
-    const lastNote=(l.activity||[]).filter(a=>a.type==="note"||a.type==="comment").slice(-1)[0];
+    const lastNote=(l.activity||[]).filter(a=>a.type==="note"||a.type==="contact").slice(-1)[0];
     const statusOpts=STATUSES.map(s=>`<option value="${s}"${l.status===s?" selected":""}>${STATUS_CFG[s].label}</option>`).join("");
     const lcClass=l.last_contact_date&&((new Date(today())-new Date(l.last_contact_date))/86400000)>14?"overdue":"";
     return `<tr>
@@ -742,20 +770,21 @@ function renderList() {
       <td style="font-size:11px;color:var(--text3)">${l.vertical||"—"}</td>
       <td>${l.rep?`<span style="display:inline-flex;align-items:center;gap:5px"><span style="width:18px;height:18px;border-radius:50%;background:var(--accent-dim);border:1px solid var(--accent);display:inline-flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:var(--accent-bright)">${repInitials(l.rep)}</span><span style="font-size:12px">${l.rep}</span></span>`:'<span style="color:var(--text3);font-size:11px">—</span>'}</td>
       <td><select class="stage-select" style="background:${sc.bg};color:${sc.cl}" onchange="quickUpdateStatusFromList('${l.id}',this.value)" onclick="event.stopPropagation()">${statusOpts}</select></td>
-      <td style="font-size:12px;color:${l.lead_date?"var(--text2)":"var(--text3)"}">
-        ${l.lead_date?fmtDate(l.lead_date):"—"}
-      </td>
+      <td style="font-size:12px;color:${l.lead_date?"var(--text2)":"var(--text3)"}"> ${l.lead_date?fmtDate(l.lead_date):"—"}</td>
       <td onclick="event.stopPropagation()" style="min-width:120px">
         <input type="date" value="${l.followup||""}" title="Follow-up date"
           style="font-size:12px;padding:4px 8px;width:auto;min-width:110px;color:${l.followup?(fc==="overdue"?"#fca5a5":fc==="due-soon"?"#fcd34d":"var(--text2)"):"var(--text3)"};background:transparent;border-color:transparent;cursor:pointer"
           onmouseover="this.style.borderColor='var(--border2)'" onmouseout="this.style.borderColor='transparent'"
           onchange="inlineUpdate('${l.id}','followup',this.value);this.style.color=this.value?'var(--text2)':'var(--text3)'">
       </td>
-      <td onclick="event.stopPropagation()" style="min-width:120px">
-        <input type="date" value="${l.last_contact_date||""}" title="Last contact date"
-          style="font-size:12px;padding:4px 8px;width:auto;min-width:110px;color:${l.last_contact_date?(lcClass==="overdue"?"#fca5a5":"var(--text2)"):"var(--text3)"};background:transparent;border-color:transparent;cursor:pointer"
-          onmouseover="this.style.borderColor='var(--border2)'" onmouseout="this.style.borderColor='transparent'"
-          onchange="inlineUpdate('${l.id}','last_contact_date',this.value);this.style.color=this.value?'var(--text2)':'var(--text3)'">
+      <td onclick="event.stopPropagation()" style="min-width:160px">
+        <div style="display:flex;align-items:center;gap:6px">
+          <input type="date" value="${l.last_contact_date||""}" title="Last contact date"
+            style="font-size:12px;padding:4px 8px;width:auto;min-width:105px;color:${l.last_contact_date?(lcClass==="overdue"?"#fca5a5":"var(--text2)"):"var(--text3)"};background:transparent;border-color:transparent;cursor:pointer"
+            onmouseover="this.style.borderColor='var(--border2)'" onmouseout="this.style.borderColor='transparent'"
+            onchange="inlineUpdate('${l.id}','last_contact_date',this.value);this.style.color=this.value?'var(--text2)':'var(--text3)'">
+          <button class="contact-btn" onclick="madeContact('${l.id}',this)" title="Mark as made contact today">✓ Made contact</button>
+        </div>
       </td>
       <td onclick="event.stopPropagation()" style="max-width:200px" title="Click to add note">
         <span id="note-display-${l.id}" style="font-size:11px;color:var(--text3);cursor:pointer;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:4px 2px;border-radius:4px"
@@ -775,18 +804,30 @@ function renderList() {
   }).join("");
 }
 function setFilter(s){filterStatus=s;renderList();}
-async function quickUpdateStatusFromList(id, value) {
+async function quickUpdateStatusFromList(id,value) {
   const lead=leads.find(l=>l.id===id); if(!lead) return;
   const old=STATUS_CFG[lead.status]?.label; lead.status=value;
   addActivity(lead,"status",`Stage changed: ${old} → ${STATUS_CFG[value].label}`);
   await dbSaveLead(lead); render();
 }
-async function inlineUpdate(id, field, value) {
+async function inlineUpdate(id,field,value) {
   const lead=leads.find(l=>l.id===id); if(!lead) return;
-  lead[field]=value;
-  await dbSaveLead(lead);
+  lead[field]=value; await dbSaveLead(lead);
 }
-function openInlineNote(id, el) {
+async function madeContact(id, btn) {
+  const lead=leads.find(l=>l.id===id); if(!lead) return;
+  lead.last_contact_date = today();
+  addActivity(lead,"contact",`Made contact on ${fmtDate(today())}`);
+  await dbSaveLead(lead);
+  // Update the date input visually without full re-render
+  const row = btn.closest("tr");
+  if (row) {
+    const inp = row.querySelector('input[type="date"][title="Last contact date"]');
+    if (inp) { inp.value=today(); inp.style.color="var(--text2)"; }
+  }
+  showToast("✓ Contact logged for "+lead.firstName,false,true);
+}
+function openInlineNote(id,el) {
   el.style.display="none";
   const wrap=document.getElementById("note-input-"+id);
   if(wrap){wrap.style.display="flex";wrap.style.flexDirection="column";}
@@ -801,8 +842,7 @@ async function saveInlineNote(id) {
   await dbSaveLead(lead);
   const display=document.getElementById("note-display-"+id);
   if(display){display.textContent=text.slice(0,50)+(text.length>50?"…":"");display.style.display="block";}
-  const wrap=document.getElementById("note-input-"+id);
-  if(wrap) wrap.style.display="none";
+  document.getElementById("note-input-"+id).style.display="none";
 }
 function closeInlineNote(id) {
   const display=document.getElementById("note-display-"+id);
@@ -813,6 +853,7 @@ function closeInlineNote(id) {
 
 // ---- KANBAN ----
 function renderKanban() {
+  renderKanbanRepPills();
   const board=document.getElementById("kanban-board"); board.innerHTML="";
   STATUSES.forEach(status=>{
     const sc=STATUS_CFG[status];
@@ -822,7 +863,7 @@ function renderKanban() {
     <div class="kanban-cards" id="kcol-${status}" ondragover="onDragOver(event,'${status}')" ondragleave="onDragLeave(event,'${status}')" ondrop="onDrop(event,'${status}')">
       ${colLeads.map(l=>{
         const fc=fcClass(l.followup);
-        const lastNote=(l.activity||[]).filter(a=>a.type==="note"||a.type==="comment").slice(-1)[0];
+        const lastNote=(l.activity||[]).filter(a=>a.type==="note"||a.type==="contact").slice(-1)[0];
         return `<div class="kcard" draggable="true" ondragstart="onDragStart(event,'${l.id}')" onclick="openLead('${l.id}')">
           <div class="kcard-name">${l.firstName||""} ${l.lastName||""}</div>
           <div class="kcard-company">${l.company||""}</div>
@@ -870,23 +911,57 @@ function openLead(id) {
     </div>
     <button class="btn btn-ghost btn-sm" onclick="closeDetail()">✕</button>`;
   renderDetailBody(l);
-  document.getElementById("detail-footer").innerHTML=`
-    <button class="btn btn-sm btn-danger" onclick="confirmDelete('${l.id}')">Delete</button>
-    <button class="btn btn-sm" onclick="closeDetail()" style="margin-left:auto">Close</button>`;
+  document.getElementById("detail-footer").innerHTML=`<button class="btn btn-sm" onclick="closeDetail()" style="margin-left:auto">Close</button>`;
   document.getElementById("detail-modal").classList.add("on");
 }
 
 function renderDetailBody(l) {
   const repOpts='<option value="">Unassigned</option>'+reps.map(r=>`<option value="${r}"${l.rep===r?" selected":""}>${r}</option>`).join("");
   const timeline=(l.activity||[]).slice().reverse().map(a=>{
-    const dc=a.type==="status"?"status":a.type==="created"?"created":"note";
-    const icon=a.type==="status"?"→":a.type==="created"?"★":"·";
+    const dc=a.type==="status"?"status":a.type==="contact"?"contact":a.type==="created"?"created":"note";
+    const icon=a.type==="status"?"→":a.type==="contact"?"📞":a.type==="created"?"★":"·";
     return `<div class="tl-item"><div class="tl-dot ${dc}">${icon}</div>
       <div class="tl-content">
         <div class="tl-meta"><span class="tl-author">${a.author||"me"}</span><span style="color:var(--text3)">${a.ts||""}</span></div>
         <div class="tl-text">${a.text}</div>
       </div></div>`;
   }).join("")||'<p style="font-size:12px;color:var(--text3)">No activity yet.</p>';
+
+  const estSection=`
+    <div>
+      ${(l.estimates||[]).length===0?`<p style="font-size:12px;color:var(--text3);margin-bottom:10px">No estimates yet.</p>`:
+        (l.estimates||[]).map(e=>`<div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:6px;align-items:center;margin-bottom:6px;padding:8px 10px;background:var(--bg3);border-radius:var(--radius);border:0.5px solid var(--border)">
+          <span style="font-size:12px;font-weight:600;color:#fff">${e.num||"—"}</span>
+          <span style="font-size:12px;color:#fcd34d;font-family:'DM Mono',monospace">$${parseFloat(e.amount||0).toLocaleString()}</span>
+          <span style="font-size:11px;color:var(--text3)">${e.date?fmtDate(e.date):"—"}</span>
+          <button class="btn btn-ghost btn-sm" style="color:#fca5a5;padding:3px 7px" onclick="removeEstimate('${e.id}')">✕</button>
+        </div>`).join("")}
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:6px;align-items:end;margin-top:6px">
+        <div class="fg"><label>Est. #</label><input id="new-est-num" placeholder="EST-001" style="font-size:12px"></div>
+        <div class="fg"><label>Amount ($)</label><input id="new-est-amount" type="number" placeholder="0" style="font-size:12px"></div>
+        <div class="fg"><label>Date</label><input id="new-est-date" type="date" style="font-size:12px"></div>
+        <button class="btn btn-sm btn-accent" onclick="addEstimate()" style="height:37px">+ Add</button>
+      </div>
+      ${(l.estimates||[]).length>0?`<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 4px;margin-top:6px"><span style="font-size:11px;font-weight:700;color:var(--text3)">Total</span><span style="font-size:13px;font-weight:700;color:#fcd34d;font-family:'DM Mono',monospace">$${(l.estimates||[]).reduce((s,e)=>s+(parseFloat(e.amount)||0),0).toLocaleString()}</span></div>`:""}
+    </div>`;
+
+  const invSection=`
+    <div>
+      ${(l.invoices||[]).length===0?`<p style="font-size:12px;color:var(--text3);margin-bottom:10px">No invoices yet.</p>`:
+        (l.invoices||[]).map(inv=>`<div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:6px;align-items:center;margin-bottom:6px;padding:8px 10px;background:var(--bg3);border-radius:var(--radius);border:0.5px solid var(--border)">
+          <span style="font-size:12px;font-weight:600;color:#fff">${inv.num||"—"}</span>
+          <span style="font-size:12px;color:#86efac;font-family:'DM Mono',monospace">$${parseFloat(inv.amount||0).toLocaleString()}</span>
+          <span style="font-size:11px;color:var(--text3)">${inv.date?fmtDate(inv.date):"—"}</span>
+          <button class="btn btn-ghost btn-sm" style="color:#fca5a5;padding:3px 7px" onclick="removeInvoice('${inv.id}')">✕</button>
+        </div>`).join("")}
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:6px;align-items:end;margin-top:6px">
+        <div class="fg"><label>Inv. #</label><input id="new-inv-num" placeholder="INV-001" style="font-size:12px"></div>
+        <div class="fg"><label>Amount ($)</label><input id="new-inv-amount" type="number" placeholder="0" style="font-size:12px"></div>
+        <div class="fg"><label>Date</label><input id="new-inv-date" type="date" style="font-size:12px"></div>
+        <button class="btn btn-sm btn-accent" onclick="addInvoice()" style="height:37px">+ Add</button>
+      </div>
+      ${(l.invoices||[]).length>0?`<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 4px;margin-top:4px;border-top:0.5px solid var(--border2)"><span style="font-size:12px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.07em">Lifetime Value</span><span style="font-size:18px;font-weight:700;color:#86efac;font-family:'DM Mono',monospace">$${(l.invoices||[]).reduce((s,inv)=>s+(parseFloat(inv.amount)||0),0).toLocaleString()}</span></div>`:""}
+    </div>`;
 
   document.getElementById("detail-body").innerHTML=`
     <div class="modal-tabs">
@@ -895,9 +970,14 @@ function renderDetailBody(l) {
     </div>
 
     <div id="dtab-overview">
+      <!-- Quick actions -->
+      <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
+        <button class="btn btn-green btn-sm" onclick="madeContactModal('${l.id}')">📞 Made contact</button>
+      </div>
+
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
         <div class="fg"><label style="font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;display:block;margin-bottom:5px">Stage</label>
-          <select style="font-size:12px" onchange="quickUpdateField('status',this.value);addActivity(leads.find(l=>l.id===editId),'status','Stage changed: '+STATUS_CFG[leads.find(l=>l.id===editId).status]?.label+' → '+STATUS_CFG[this.value].label)">
+          <select style="font-size:12px" onchange="quickUpdateStatus(this.value)">
             ${STATUSES.map(s=>`<option value="${s}"${l.status===s?" selected":""}>${STATUS_CFG[s].label}</option>`).join("")}
           </select></div>
         <div class="fg"><label style="font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;display:block;margin-bottom:5px">Rep</label>
@@ -928,8 +1008,7 @@ function renderDetailBody(l) {
         </div>
         <div class="form-grid-2" style="margin-bottom:10px">
           <div class="fg"><label>Vertical</label>
-            <select id="e-vertical">
-              <option value="">Select...</option>
+            <select id="e-vertical"><option value="">Select...</option>
               ${["Portable Sanitation","Dumpster Rental","Equipment Rental","Waste Management","Construction","Propane / Oil","Field Services","Home Services","Other"].map(v=>`<option${l.vertical===v?" selected":""}>${v}</option>`).join("")}
             </select></div>
           <div class="fg"><label>Assign rep</label><select id="e-rep">${repOpts}</select></div>
@@ -947,61 +1026,28 @@ function renderDetailBody(l) {
         <button class="btn btn-accent btn-sm" id="save-edit-btn" onclick="saveEdit()">Save changes</button>
       </div>
 
-      <div style="border-top:0.5px solid var(--border);padding-top:14px;margin-bottom:14px">
-        <p class="section-label" style="margin-bottom:10px">Estimates</p>
-        <div id="estimates-list">
-          ${(l.estimates||[]).length===0?`<p style="font-size:12px;color:var(--text3);margin-bottom:10px">No estimates yet.</p>`:
-            (l.estimates||[]).map(e=>`<div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:6px;align-items:center;margin-bottom:6px;padding:8px 10px;background:var(--bg3);border-radius:var(--radius);border:0.5px solid var(--border)">
-              <span style="font-size:12px;font-weight:600;color:#fff">${e.num||"—"}</span>
-              <span style="font-size:12px;color:#fcd34d;font-family:'DM Mono',monospace">$${parseFloat(e.amount||0).toLocaleString()}</span>
-              <span style="font-size:11px;color:var(--text3)">${e.date?fmtDate(e.date):"—"}</span>
-              <button class="btn btn-ghost btn-sm" style="color:#fca5a5;padding:3px 7px" onclick="removeEstimate('${e.id}')">✕</button>
-            </div>`).join("")}
+      <!-- Estimates collapsible -->
+      <div>
+        <div class="collapsible-header" onclick="toggleSection('est-body','est-arrow')">
+          <div style="display:flex;align-items:center;gap:8px">
+            <span class="collapsible-title">Estimates</span>
+            ${(l.estimates||[]).length>0?`<span style="font-size:11px;background:rgba(252,211,77,.15);color:#fcd34d;padding:2px 8px;border-radius:10px;font-family:'DM Mono',monospace">${(l.estimates||[]).length} · $${(l.estimates||[]).reduce((s,e)=>s+(parseFloat(e.amount)||0),0).toLocaleString()}</span>`:""}
+          </div>
+          <span class="collapsible-arrow" id="est-arrow">▼</span>
         </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:6px;align-items:end;margin-top:6px">
-          <div class="fg"><label>Est. #</label><input id="new-est-num" placeholder="EST-001" style="font-size:12px"></div>
-          <div class="fg"><label>Amount ($)</label><input id="new-est-amount" type="number" placeholder="0" style="font-size:12px"></div>
-          <div class="fg"><label>Date</label><input id="new-est-date" type="date" style="font-size:12px"></div>
-          <button class="btn btn-sm btn-accent" onclick="addEstimate()" style="height:37px">+ Add</button>
-        </div>
-        ${(l.estimates||[]).length>0?`<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 4px;margin-top:6px">
-          <span style="font-size:11px;font-weight:700;color:var(--text3)">Total estimates</span>
-          <span style="font-size:13px;font-weight:700;color:#fcd34d;font-family:'DM Mono',monospace">$${(l.estimates||[]).reduce((s,e)=>s+(parseFloat(e.amount)||0),0).toLocaleString()}</span>
-        </div>`:""}
+        <div id="est-body" style="display:none;padding-bottom:14px">${estSection}</div>
       </div>
 
-      <div style="border-top:0.5px solid var(--border);padding-top:14px;margin-bottom:14px">
-        <p class="section-label" style="margin-bottom:10px">Invoices</p>
-        <div id="invoices-list">
-          ${(l.invoices||[]).length===0?`<p style="font-size:12px;color:var(--text3);margin-bottom:10px">No invoices yet.</p>`:
-            (l.invoices||[]).map(inv=>`<div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:6px;align-items:center;margin-bottom:6px;padding:8px 10px;background:var(--bg3);border-radius:var(--radius);border:0.5px solid var(--border)">
-              <span style="font-size:12px;font-weight:600;color:#fff">${inv.num||"—"}</span>
-              <span style="font-size:12px;color:#86efac;font-family:'DM Mono',monospace">$${parseFloat(inv.amount||0).toLocaleString()}</span>
-              <span style="font-size:11px;color:var(--text3)">${inv.date?fmtDate(inv.date):"—"}</span>
-              <button class="btn btn-ghost btn-sm" style="color:#fca5a5;padding:3px 7px" onclick="removeInvoice('${inv.id}')">✕</button>
-            </div>`).join("")}
+      <!-- Invoices collapsible -->
+      <div>
+        <div class="collapsible-header" onclick="toggleSection('inv-body','inv-arrow')">
+          <div style="display:flex;align-items:center;gap:8px">
+            <span class="collapsible-title">Invoices / LTV</span>
+            ${(l.invoices||[]).length>0?`<span style="font-size:11px;background:rgba(34,197,94,.15);color:#86efac;padding:2px 8px;border-radius:10px;font-family:'DM Mono',monospace">${(l.invoices||[]).length} · $${(l.invoices||[]).reduce((s,inv)=>s+(parseFloat(inv.amount)||0),0).toLocaleString()}</span>`:""}
+          </div>
+          <span class="collapsible-arrow" id="inv-arrow">▼</span>
         </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:6px;align-items:end;margin-top:6px">
-          <div class="fg"><label>Inv. #</label><input id="new-inv-num" placeholder="INV-001" style="font-size:12px"></div>
-          <div class="fg"><label>Amount ($)</label><input id="new-inv-amount" type="number" placeholder="0" style="font-size:12px"></div>
-          <div class="fg"><label>Date</label><input id="new-inv-date" type="date" style="font-size:12px"></div>
-          <button class="btn btn-sm btn-accent" onclick="addInvoice()" style="height:37px">+ Add</button>
-        </div>
-        ${(l.invoices||[]).length>0?`<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 4px;margin-top:4px;border-top:0.5px solid var(--border2)">
-          <span style="font-size:12px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.07em">Lifetime Value</span>
-          <span style="font-size:18px;font-weight:700;color:#86efac;font-family:'DM Mono',monospace">$${(l.invoices||[]).reduce((s,inv)=>s+(parseFloat(inv.amount)||0),0).toLocaleString()}</span>
-        </div>`:""}
-      </div>
-
-      <div style="border-top:0.5px solid var(--border);padding-top:14px">
-        <p class="section-label" style="margin-bottom:8px">Manage reps</p>
-        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">
-          ${reps.map(r=>`<span style="font-size:12px;padding:4px 10px;background:var(--bg3);border:0.5px solid var(--border2);border-radius:20px;color:var(--text2);display:inline-flex;align-items:center;gap:6px">${r}<button onclick="removeRep('${r}')" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:12px;padding:0;line-height:1">✕</button></span>`).join("")}
-        </div>
-        <div style="display:flex;gap:8px">
-          <input id="new-rep-input" placeholder="Add rep name..." style="flex:1;font-size:12px">
-          <button class="btn btn-sm" onclick="addRep()">Add rep</button>
-        </div>
+        <div id="inv-body" style="display:none;padding-bottom:14px">${invSection}</div>
       </div>
     </div>
 
@@ -1016,7 +1062,16 @@ function renderDetailBody(l) {
     </div>`;
 }
 
-function switchTab(btn, tabId) {
+function toggleSection(bodyId, arrowId) {
+  const body=document.getElementById(bodyId);
+  const arrow=document.getElementById(arrowId);
+  if (!body) return;
+  const open = body.style.display==="none";
+  body.style.display = open?"block":"none";
+  if (arrow) arrow.classList.toggle("open",open);
+}
+
+function switchTab(btn,tabId) {
   document.querySelectorAll(".modal-tab").forEach(b=>b.classList.remove("on")); btn.classList.add("on");
   ["dtab-overview","dtab-timeline"].forEach(t=>{const el=document.getElementById(t);if(el)el.style.display="none";});
   const t=document.getElementById(tabId); if(t) t.style.display="block";
@@ -1031,10 +1086,24 @@ async function submitComment() {
   switchTab(document.querySelectorAll(".modal-tab")[1],"dtab-timeline");
   render();
 }
-async function quickUpdateField(field, value) {
+async function quickUpdateStatus(value) {
   const lead=leads.find(l=>l.id===editId); if(!lead) return;
-  lead[field]=value;
+  const old=STATUS_CFG[lead.status]?.label; lead.status=value;
+  addActivity(lead,"status",`Stage changed: ${old} → ${STATUS_CFG[value].label}`);
   await dbSaveLead(lead); render();
+}
+async function quickUpdateField(field,value) {
+  const lead=leads.find(l=>l.id===editId); if(!lead) return;
+  lead[field]=value; await dbSaveLead(lead); render();
+}
+async function madeContactModal(id) {
+  const lead=leads.find(l=>l.id===id); if(!lead) return;
+  lead.last_contact_date=today();
+  addActivity(lead,"contact",`Made contact on ${fmtDate(today())}`);
+  await dbSaveLead(lead); render();
+  renderDetailBody(lead);
+  switchTab(document.querySelectorAll(".modal-tab")[1],"dtab-timeline");
+  showToast("✓ Contact logged",false,true);
 }
 async function saveEdit() {
   const lead=leads.find(l=>l.id===editId); if(!lead) return;
@@ -1057,6 +1126,7 @@ async function addEstimate() {
   lead.estimates.push({id:uid(),num:num||"",amount:amount||"0",date:date||""});
   await dbSaveLead(lead); renderDetailBody(lead);
   switchTab(document.querySelectorAll(".modal-tab")[0],"dtab-overview");
+  setTimeout(()=>{document.getElementById("est-body").style.display="block";document.getElementById("est-arrow")?.classList.add("open");},50);
 }
 async function removeEstimate(estId) {
   const lead=leads.find(l=>l.id===editId); if(!lead) return;
@@ -1074,32 +1144,13 @@ async function addInvoice() {
   lead.invoices.push({id:uid(),num:num||"",amount:amount||"0",date:date||""});
   await dbSaveLead(lead); render(); renderDetailBody(lead);
   switchTab(document.querySelectorAll(".modal-tab")[0],"dtab-overview");
+  setTimeout(()=>{document.getElementById("inv-body").style.display="block";document.getElementById("inv-arrow")?.classList.add("open");},50);
 }
 async function removeInvoice(invId) {
   const lead=leads.find(l=>l.id===editId); if(!lead) return;
   lead.invoices=(lead.invoices||[]).filter(inv=>inv.id!==invId);
   await dbSaveLead(lead); render(); renderDetailBody(lead);
   switchTab(document.querySelectorAll(".modal-tab")[0],"dtab-overview");
-}
-async function addRep() {
-  const name=document.getElementById("new-rep-input")?.value.trim();
-  if(!name||reps.includes(name)) return;
-  await dbAddRep(name); reps.push(name); populateRepSelects();
-  const lead=leads.find(x=>x.id===editId); if(lead) renderDetailBody(lead);
-}
-async function removeRep(name) {
-  await dbRemoveRep(name); reps=reps.filter(r=>r!==name);
-  leads.forEach(l=>{if(l.rep===name)l.rep="";});
-  await Promise.all(leads.filter(l=>l.rep==="").map(l=>dbSaveLead(l)));
-  populateRepSelects();
-  const lead=leads.find(x=>x.id===editId); if(lead) renderDetailBody(lead);
-  render();
-}
-async function confirmDelete(id) {
-  const l=leads.find(x=>x.id===id);
-  if(l&&confirm("Delete "+l.firstName+" at "+l.company+"? This cannot be undone.")){
-    await dbDeleteLead(id); leads=leads.filter(x=>x.id!==id); closeDetail(); render();
-  }
 }
 function closeDetail(){document.getElementById("detail-modal").classList.remove("on");editId=null;}
 
@@ -1113,7 +1164,7 @@ async function addLead() {
   const btn=document.getElementById("add-save-btn"); btn.disabled=true; btn.textContent="Saving...";
   const noteText=document.getElementById("f-notes").value.trim();
   const lead={
-    id:uid(), firstName, company,
+    id:uid(),firstName,company,
     lastName:document.getElementById("f-lastName").value.trim(),
     email:document.getElementById("f-email").value.trim(),
     phone:document.getElementById("f-phone").value.trim(),
@@ -1126,8 +1177,7 @@ async function addLead() {
     lead_date:document.getElementById("f-lead_date").value,
     last_contact_date:document.getElementById("f-last_contact_date").value,
     closed_date:document.getElementById("f-closed_date").value,
-    deal_notes:"", estimates:[], invoices:[],
-    dateAdded:today(), activity:[]
+    deal_notes:"",estimates:[],invoices:[],dateAdded:today(),activity:[]
   };
   addActivity(lead,"created",`Lead created${noteText?" — "+noteText:""}${lead.rep?" · assigned to "+lead.rep:""}`);
   await dbSaveLead(lead); leads.unshift(lead);
@@ -1137,7 +1187,7 @@ async function addLead() {
   ["f-vertical","f-rep"].forEach(id=>{const el=document.getElementById(id);if(el)el.value="";});
   document.getElementById("f-status").value="new";
   ["f-followup","f-lead_date","f-last_contact_date","f-closed_date"].forEach(id=>{const el=document.getElementById(id);if(el)el.value="";});
-  showToast("✓ Lead added");
+  showToast("✓ Lead added",false,true);
 }
 
 // ---- CSV IMPORT ----
@@ -1168,30 +1218,12 @@ function dropFile(e){e.preventDefault();document.getElementById("import-drop")?.
 function handleFileSelect(e){const f=e.target.files[0];if(f)readFile(f);}
 function readFile(f){const r=new FileReader();r.onload=ev=>parseCSV(ev.target.result);r.readAsText(f);}
 function parsePasted(){const t=document.getElementById("import-paste")?.value.trim();if(t)parseCSV(t);}
-const COL_MAP={
-  firstname:"firstName",first_name:"firstName",
-  lastname:"lastName",last_name:"lastName",
-  email:"email",emailaddress:"email",
-  phone:"phone",phonenumber:"phone",mobile:"phone",
-  companyname:"company",company_name:"company",company:"company",
-  vertical_label:"vertical",vertical:"vertical",industry:"vertical",
-  title:"title",jobtitle:"title",job_title:"title",position:"title",
-  status:"status",leadstatus:"status",stage:"status",
-  rep:"rep",assignedto:"rep",assigned_to:"rep",owner:"rep",salesrep:"rep",
-  followup:"followup",follow_up:"followup",followupdate:"followup",
-  value:"value",dealvalue:"value",deal_value:"value",amount:"value",
-  lead_date:"lead_date",leaddate:"lead_date",
-  last_contact_date:"last_contact_date",lastcontact:"last_contact_date",lastcontactdate:"last_contact_date"
-};
+const COL_MAP={firstname:"firstName",first_name:"firstName",lastname:"lastName",last_name:"lastName",email:"email",emailaddress:"email",phone:"phone",phonenumber:"phone",mobile:"phone",companyname:"company",company_name:"company",company:"company",vertical_label:"vertical",vertical:"vertical",industry:"vertical",title:"title",jobtitle:"title",job_title:"title",position:"title",status:"status",leadstatus:"status",stage:"status",rep:"rep",assignedto:"rep",assigned_to:"rep",owner:"rep",salesrep:"rep",followup:"followup",follow_up:"followup",followupdate:"followup",value:"value",dealvalue:"value",deal_value:"value",amount:"value",lead_date:"lead_date",leaddate:"lead_date",last_contact_date:"last_contact_date",lastcontact:"last_contact_date",lastcontactdate:"last_contact_date"};
 function normalizeHeader(h){return COL_MAP[h.toLowerCase().replace(/[\s\-_.]/g,"").trim()]||null;}
 function parseCSV(text) {
   const lines=text.split("\n").map(l=>l.replace(/\r/g,"")).filter(l=>l.trim());
   if(lines.length<2) return;
-  function splitLine(line){
-    const res=[];let cur="";let inQ=false;
-    for(let i=0;i<line.length;i++){const c=line[i];if(c==='"'){inQ=!inQ;}else if(c===","&&!inQ){res.push(cur.trim().replace(/^"|"$/g,""));cur="";}else cur+=c;}
-    res.push(cur.trim().replace(/^"|"$/g,""));return res;
-  }
+  function splitLine(line){const res=[];let cur="";let inQ=false;for(let i=0;i<line.length;i++){const c=line[i];if(c==='"'){inQ=!inQ;}else if(c===","&&!inQ){res.push(cur.trim().replace(/^"|"$/g,""));cur="";}else cur+=c;}res.push(cur.trim().replace(/^"|"$/g,""));return res;}
   const rawHeaders=splitLine(lines[0]);
   const headers=rawHeaders.map(h=>normalizeHeader(h));
   const rows=lines.slice(1).map(line=>{
@@ -1203,11 +1235,11 @@ function parseCSV(text) {
   importPreviewData=rows; showImportPreview(rows);
 }
 function showImportPreview(rows) {
-  const nc=rows.filter(r=>!r._dup).length, dc=rows.filter(r=>r._dup).length;
+  const nc=rows.filter(r=>!r._dup).length,dc=rows.filter(r=>r._dup).length;
   document.getElementById("import-body").innerHTML=`
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;flex-wrap:wrap;gap:8px">
       <div><p style="font-weight:700;font-size:15px;color:#fff;margin-bottom:2px">${rows.length} rows parsed</p>
-        <p style="font-size:12px;color:var(--text3)">${nc} new · ${dc} duplicates (matched by email or company)</p></div>
+        <p style="font-size:12px;color:var(--text3)">${nc} new · ${dc} duplicates</p></div>
     </div>
     <div style="border:1px solid var(--border);border-radius:var(--radius-lg);overflow:auto;max-height:300px">
       <table style="width:100%;border-collapse:collapse;min-width:440px">
@@ -1236,15 +1268,7 @@ async function doImport() {
   const newRows=importPreviewData.filter(r=>!r._dup);
   const btn=document.getElementById("do-import-btn"); btn.disabled=true; btn.textContent="Importing...";
   const newLeads=newRows.map(r=>{
-    const lead={
-      id:uid(),dateAdded:today(),activity:[],estimates:[],invoices:[],
-      firstName:r.firstName||"",lastName:r.lastName||"",email:r.email||"",phone:r.phone||"",
-      company:r.company||"",vertical:r.vertical||"",title:r.title||"",
-      status:STATUSES.includes(r.status)?r.status:"new",
-      rep:r.rep||"",followup:r.followup||"",value:r.value||"",
-      lead_date:r.lead_date||"",last_contact_date:r.last_contact_date||"",
-      closed_date:"",deal_notes:""
-    };
+    const lead={id:uid(),dateAdded:today(),activity:[],estimates:[],invoices:[],firstName:r.firstName||"",lastName:r.lastName||"",email:r.email||"",phone:r.phone||"",company:r.company||"",vertical:r.vertical||"",title:r.title||"",status:STATUSES.includes(r.status)?r.status:"new",rep:r.rep||"",followup:r.followup||"",value:r.value||"",lead_date:r.lead_date||"",last_contact_date:r.last_contact_date||"",closed_date:"",deal_notes:""};
     addActivity(lead,"created",`Lead imported via CSV${r.rep?" · assigned to "+r.rep:""}`);
     if(r.rep&&!reps.includes(r.rep)) reps.push(r.rep);
     return lead;
@@ -1252,7 +1276,7 @@ async function doImport() {
   await Promise.all(newLeads.map(l=>dbSaveLead(l)));
   leads=[...newLeads,...leads]; populateRepSelects();
   render(); closeImportModal();
-  showToast("✓ "+newLeads.length+" leads imported");
+  showToast("✓ "+newLeads.length+" leads imported",false,true);
 }
 
 ["add-modal","detail-modal","import-modal"].forEach(id=>{
