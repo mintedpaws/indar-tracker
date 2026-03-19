@@ -388,7 +388,6 @@ tr:hover td{background:rgba(192,96,255,0.05)}
           </div>
           <div class="fg"><label>Assign to rep</label><select id="f-rep"><option value="">Unassigned</option></select></div>
           <div class="fg"><label>Follow-up</label><input id="f-followup" type="date"></div>
-          <div class="fg"><label>Deal value ($)</label><input id="f-value" type="number" placeholder="0"></div>
         </div>
         <div class="form-grid-3">
           <div class="fg"><label>Lead date</label><input id="f-lead_date" type="date"></div>
@@ -674,14 +673,30 @@ function renderDashboard() {
   const closed=fl.filter(l=>l.status==="closed").length;
   const active=fl.filter(l=>!["dead","closed"].includes(l.status)).length;
   const overdue=leads.filter(l=>l.followup&&parseDate(l.followup)<parseDate(t)&&l.status!=="dead").length;
-  const closedVal=fl.filter(l=>l.status==="closed").reduce((s,l)=>s+(parseFloat(l.value)||0),0);
-  const pipeVal=fl.filter(l=>l.status!=="dead").reduce((s,l)=>s+(parseFloat(l.value)||0),0);
-  const totalLTV=fl.reduce((s,l)=>s+(l.invoices||[]).reduce((si,inv)=>si+(parseFloat(inv.amount)||0),0),0);
-  const newAccounts=fl.filter(l=>(l.invoices||[]).length>0).length;
+
+  // All invoices filtered by invoice date within range
+  function invoiceInRange(inv) {
+    if(!rangeStart) return true;
+    const d = inv.date||"";
+    if(!d) return false;
+    const ts = parseDate(d);
+    return ts >= parseDate(rangeStart) && ts <= parseDate(rangeEnd+"T23:59:59");
+  }
+  function estimateInRange(est) {
+    if(!rangeStart) return true;
+    const d = est.date||"";
+    if(!d) return false;
+    const ts = parseDate(d);
+    return ts >= parseDate(rangeStart) && ts <= parseDate(rangeEnd+"T23:59:59");
+  }
+
+  const totalLTV = leads.reduce((s,l)=>s+(l.invoices||[]).filter(invoiceInRange).reduce((si,inv)=>si+(parseFloat(inv.amount)||0),0),0);
+  const newAccounts = leads.filter(l=>(l.invoices||[]).filter(invoiceInRange).length>0).length;
   const repStats=reps.map(r=>{
-    const rl=fl.filter(l=>l.rep===r);
-    const ltv=rl.reduce((s,l)=>s+(l.invoices||[]).reduce((si,inv)=>si+(parseFloat(inv.amount)||0),0),0);
-    return {name:r,total:rl.length,closed:rl.filter(l=>l.status==="closed").length,value:rl.filter(l=>l.status==="closed").reduce((s,l)=>s+(parseFloat(l.value)||0),0),ltv};
+    const rl=leads.filter(l=>l.rep===r);
+    const ltv=rl.reduce((s,l)=>s+(l.invoices||[]).filter(invoiceInRange).reduce((si,inv)=>si+(parseFloat(inv.amount)||0),0),0);
+    const closedCount=fl.filter(l=>l.rep===r&&l.status==="closed").length;
+    return {name:r,total:fl.filter(l=>l.rep===r).length,closed:closedCount,ltv};
   });
 
   const rangePills = [
@@ -700,9 +715,9 @@ function renderDashboard() {
   const thisWeek = leads.filter(l=>l.followup&&parseDate(l.followup)<=parseDate(we)&&l.status!=="dead").sort((a,b)=>parseDate(a.followup)-parseDate(b.followup));
 
   const allEstimates=[]; const allInvoices=[];
-  fl.forEach(l=>{
-    (l.estimates||[]).forEach(e=>allEstimates.push({...e,leadId:l.id,leadName:`${l.firstName} ${l.lastName||""}`.trim(),company:l.company,rep:l.rep}));
-    (l.invoices||[]).forEach(inv=>allInvoices.push({...inv,leadId:l.id,leadName:`${l.firstName} ${l.lastName||""}`.trim(),company:l.company,rep:l.rep}));
+  leads.forEach(l=>{
+    (l.estimates||[]).filter(estimateInRange).forEach(e=>allEstimates.push({...e,leadId:l.id,leadName:`${l.firstName} ${l.lastName||""}`.trim(),company:l.company,rep:l.rep}));
+    (l.invoices||[]).filter(invoiceInRange).forEach(inv=>allInvoices.push({...inv,leadId:l.id,leadName:`${l.firstName} ${l.lastName||""}`.trim(),company:l.company,rep:l.rep}));
   });
   allEstimates.sort((a,b)=>(b.date||"0").localeCompare(a.date||"0"));
   allInvoices.sort((a,b)=>(b.date||"0").localeCompare(a.date||"0"));
@@ -751,9 +766,9 @@ function renderDashboard() {
 
     <div class="dash-grid" style="grid-template-columns:repeat(4,1fr)">
       <div class="dash-stat" style="cursor:pointer" onclick="showView('list');setFilter('all')" title="View all leads"><div class="dash-stat-num">${total}</div><div class="dash-stat-label">Total leads</div><div class="dash-stat-sub">${active} active in pipeline</div></div>
-      <div class="dash-stat" style="cursor:pointer" onclick="showView('list');setFilter('closed')" title="View closed leads"><div class="dash-stat-num" style="color:#86efac">${closed}</div><div class="dash-stat-label">Closed</div><div class="dash-stat-sub">$${closedVal.toLocaleString()} closed value</div></div>
+      <div class="dash-stat" style="cursor:pointer" onclick="showView('list');setFilter('closed')" title="View closed leads"><div class="dash-stat-num" style="color:#86efac">${closed}</div><div class="dash-stat-label">Closed</div><div class="dash-stat-sub">&nbsp;</div></div>
       <div class="dash-stat" style="cursor:pointer" onclick="showView('list');setFilter('all');document.getElementById('sort-select').value='added'" title="View accounts with invoices"><div class="dash-stat-num" style="color:#c084fc">${newAccounts}</div><div class="dash-stat-label">New accounts</div><div class="dash-stat-sub">$${totalLTV.toLocaleString()} lifetime value</div></div>
-      <div class="dash-stat" style="cursor:pointer" onclick="showView('list');setFilter('overdue')" title="View overdue follow-ups"><div class="dash-stat-num" style="color:${overdue>0?"#fca5a5":"#fff"}">${overdue}</div><div class="dash-stat-label">Overdue follow-ups</div><div class="dash-stat-sub">$${pipeVal.toLocaleString()} pipeline value</div></div>
+      <div class="dash-stat" style="cursor:pointer" onclick="showView('list');setFilter('overdue')" title="View overdue follow-ups"><div class="dash-stat-num" style="color:${overdue>0?"#fca5a5":"#fff"}">${overdue}</div><div class="dash-stat-label">Overdue follow-ups</div><div class="dash-stat-sub">&nbsp;</div></div>
     </div>
 
     ${repStats.length>0?`<div style="margin-bottom:1.5rem">
@@ -762,8 +777,7 @@ function renderDashboard() {
         <div class="rep-card-name"><span class="rep-avatar">${repInitials(r.name)}</span>${r.name}</div>
         <div class="rep-stat"><span>Leads</span><span>${r.total}</span></div>
         <div class="rep-stat"><span>Closed</span><span>${r.closed}</span></div>
-        <div class="rep-stat"><span>Pipeline</span><span>$${r.value.toLocaleString()}</span></div>
-        ${r.ltv>0?`<div class="rep-stat"><span>Lifetime value</span><span style="color:#86efac">$${r.ltv.toLocaleString()}</span></div>`:""}
+        <div class="rep-stat"><span>Invoiced</span><span style="color:#86efac">$${r.ltv.toLocaleString()}</span></div>
       </div>`).join("")}</div>
     </div>`:""}
 
@@ -1062,14 +1076,14 @@ function renderDetailBody(l) {
           </select></div>
         <div class="fg"><label style="font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;display:block;margin-bottom:5px">Rep</label>
           <select style="font-size:12px" onchange="quickUpdateField('rep',this.value)">${repOpts}</select></div>
-        <div class="fg"><label style="font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;display:block;margin-bottom:5px">Follow-up</label>
-          <input type="date" value="${l.followup||""}" style="font-size:12px" onchange="quickUpdateField('followup',this.value)"></div>
-        <div class="fg"><label style="font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;display:block;margin-bottom:5px">Deal value</label>
-          <input type="number" value="${l.value||""}" style="font-size:12px" placeholder="$0" onchange="quickUpdateField('value',this.value)"></div>
-        <div class="fg"><label style="font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;display:block;margin-bottom:5px">Last contact</label>
-          <input type="date" value="${l.last_contact_date||""}" style="font-size:12px" onchange="quickUpdateField('last_contact_date',this.value)"></div>
         <div class="fg"><label style="font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;display:block;margin-bottom:5px">Lead date</label>
           <input type="date" value="${l.lead_date||""}" style="font-size:12px" onchange="quickUpdateField('lead_date',this.value)"></div>
+        <div class="fg"><label style="font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;display:block;margin-bottom:5px">Last contact</label>
+          <input type="date" value="${l.last_contact_date||""}" style="font-size:12px" onchange="quickUpdateField('last_contact_date',this.value)"></div>
+        <div class="fg"><label style="font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;display:block;margin-bottom:5px">Follow-up</label>
+          <input type="date" value="${l.followup||""}" style="font-size:12px" onchange="quickUpdateField('followup',this.value)"></div>
+        <div class="fg"><label style="font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;display:block;margin-bottom:5px">Closed date</label>
+          <input type="date" value="${l.closed_date||""}" style="font-size:12px" onchange="quickUpdateField('closed_date',this.value)"></div>
       </div>
 
       <div style="border-top:0.5px solid var(--border);padding-top:14px;margin-bottom:14px">
@@ -1096,14 +1110,9 @@ function renderDetailBody(l) {
       </div>
 
       <div style="border-top:0.5px solid var(--border);padding-top:14px;margin-bottom:14px">
-        <p class="section-label" style="margin-bottom:10px">Deal Details</p>
-        <div class="form-grid-3" style="margin-bottom:10px">
-          <div class="fg"><label>Lead date</label><input id="e-lead_date" type="date" value="${l.lead_date||""}"></div>
-          <div class="fg"><label>Last contact</label><input id="e-last_contact_date" type="date" value="${l.last_contact_date||""}"></div>
-          <div class="fg"><label>Closed date</label><input id="e-closed_date" type="date" value="${l.closed_date||""}"></div>
-        </div>
-        <div class="fg" style="margin-bottom:14px"><label>Deal notes</label><textarea id="e-deal_notes" rows="3" style="width:100%;font-family:'DM Sans',sans-serif;font-size:13px;resize:vertical">${l.deal_notes||""}</textarea></div>
-        <button class="btn btn-accent btn-sm" id="save-edit-btn" onclick="saveEdit()">Save changes</button>
+        <p class="section-label" style="margin-bottom:10px">Deal Notes</p>
+        <div class="fg" style="margin-bottom:14px"><textarea id="e-deal_notes" rows="3" style="width:100%;font-family:'DM Sans',sans-serif;font-size:13px;resize:vertical">${l.deal_notes||""}</textarea></div>
+        <button class="btn btn-accent btn-sm" id="save-edit-btn" onclick="saveEdit()">Save notes</button>
       </div>
 
       <!-- Estimates collapsible -->
@@ -1190,11 +1199,10 @@ async function saveEdit() {
   ["firstName","lastName","email","phone","company","title"].forEach(f=>{const el=document.getElementById("e-"+f);if(el)lead[f]=el.value;});
   const ev=document.getElementById("e-vertical"); if(ev) lead.vertical=ev.value;
   const er=document.getElementById("e-rep"); if(er) lead.rep=er.value;
-  ["lead_date","closed_date","last_contact_date","deal_notes"].forEach(f=>{const el=document.getElementById("e-"+f);if(el)lead[f]=el.value;});
-  addActivity(lead,"note","Lead details updated");
+  const dn=document.getElementById("e-deal_notes"); if(dn) lead.deal_notes=dn.value;
   await dbSaveLead(lead); render(); populateRepSelects();
   const btn=document.getElementById("save-edit-btn");
-  if(btn){btn.textContent="Saved!";btn.style.background="#86efac";btn.style.color="#1a0d2e";setTimeout(()=>{btn.textContent="Save changes";btn.style.background="";btn.style.color="";},1500);}
+  if(btn){btn.textContent="Saved!";btn.style.background="#86efac";btn.style.color="#1a0d2e";setTimeout(()=>{btn.textContent="Save notes";btn.style.background="";btn.style.color="";},1500);}
 }
 async function addEstimate() {
   const lead=leads.find(l=>l.id===editId); if(!lead) return;
