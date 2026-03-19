@@ -452,6 +452,7 @@ const STATUSES = Object.keys(STATUS_CFG);
 let leads = [], reps = [], currentUser = null;
 let filterStatus = "all", filterRep = "", searchQ = "", editId = null;
 let sortDir = {}; // tracks asc/desc per column key
+let dashRange = "all", dashCustomStart = "", dashCustomEnd = "";
 let charts = {}, importPreviewData = [];
 
 // ---- DB ----
@@ -651,27 +652,55 @@ function render() {
 
 // ---- DASHBOARD ----
 function renderDashboard() {
-  const total=leads.length;
-  const closed=leads.filter(l=>l.status==="closed").length;
-  const active=leads.filter(l=>!["dead","closed"].includes(l.status)).length;
-  const overdue=leads.filter(l=>l.followup&&l.followup<today()&&l.status!=="dead").length;
-  const closedVal=leads.filter(l=>l.status==="closed").reduce((s,l)=>s+(parseFloat(l.value)||0),0);
-  const pipeVal=leads.filter(l=>l.status!=="dead").reduce((s,l)=>s+(parseFloat(l.value)||0),0);
-  const totalLTV=leads.reduce((s,l)=>s+(l.invoices||[]).reduce((si,inv)=>si+(parseFloat(inv.amount)||0),0),0);
-  // New accounts = unique leads that have at least one invoice (each lead = one customer regardless of invoice count)
-  const newAccounts=leads.filter(l=>(l.invoices||[]).length>0).length;
+  // Date range filter
+  const t = today();
+  let rangeStart = "", rangeEnd = t;
+  if (dashRange==="week") { const d=new Date(); d.setDate(d.getDate()-d.getDay()); rangeStart=d.toISOString().slice(0,10); }
+  else if (dashRange==="month") { rangeStart=t.slice(0,7)+"-01"; }
+  else if (dashRange==="year") { rangeStart=t.slice(0,4)+"-01-01"; }
+  else if (dashRange==="custom") { rangeStart=dashCustomStart; rangeEnd=dashCustomEnd||t; }
+
+  function inRange(l) {
+    if(!rangeStart) return true;
+    const d = l.lead_date || l.dateAdded || "";
+    if(!d) return false;
+    const ts = parseDate(d);
+    return ts >= parseDate(rangeStart) && ts <= parseDate(rangeEnd+"T23:59:59");
+  }
+
+  const fl = dashRange==="all" ? leads : leads.filter(inRange);
+
+  const total=fl.length;
+  const closed=fl.filter(l=>l.status==="closed").length;
+  const active=fl.filter(l=>!["dead","closed"].includes(l.status)).length;
+  const overdue=leads.filter(l=>l.followup&&parseDate(l.followup)<parseDate(t)&&l.status!=="dead").length;
+  const closedVal=fl.filter(l=>l.status==="closed").reduce((s,l)=>s+(parseFloat(l.value)||0),0);
+  const pipeVal=fl.filter(l=>l.status!=="dead").reduce((s,l)=>s+(parseFloat(l.value)||0),0);
+  const totalLTV=fl.reduce((s,l)=>s+(l.invoices||[]).reduce((si,inv)=>si+(parseFloat(inv.amount)||0),0),0);
+  const newAccounts=fl.filter(l=>(l.invoices||[]).length>0).length;
   const repStats=reps.map(r=>{
-    const rl=leads.filter(l=>l.rep===r);
+    const rl=fl.filter(l=>l.rep===r);
     const ltv=rl.reduce((s,l)=>s+(l.invoices||[]).reduce((si,inv)=>si+(parseFloat(inv.amount)||0),0),0);
     return {name:r,total:rl.length,closed:rl.filter(l=>l.status==="closed").length,value:rl.filter(l=>l.status==="closed").reduce((s,l)=>s+(parseFloat(l.value)||0),0),ltv};
   });
 
-  // This week's follow-ups = overdue OR due this week
+  const rangePills = [
+    {k:"all",l:"All time"},{k:"week",l:"This week"},{k:"month",l:"This month"},{k:"year",l:"This year"},{k:"custom",l:"Custom"}
+  ].map(p=>`<button onclick="setDashRange('${p.k}')" style="font-family:'DM Sans',sans-serif;font-size:11px;padding:4px 12px;border-radius:20px;border:0.5px solid ${dashRange===p.k?"var(--accent-bright)":"var(--border2)"};cursor:pointer;background:${dashRange===p.k?"var(--accent-dim)":"transparent"};color:${dashRange===p.k?"#fff":"var(--text3)"};font-weight:600;transition:all .15s">${p.l}</button>`).join("");
+
+  const customInputs = dashRange==="custom" ? `
+    <div style="display:flex;align-items:center;gap:8px;margin-top:8px;flex-wrap:wrap">
+      <input type="date" value="${dashCustomStart}" style="font-size:12px;padding:5px 10px;width:auto" onchange="dashCustomStart=this.value;renderDashboard()">
+      <span style="color:var(--text3);font-size:12px">to</span>
+      <input type="date" value="${dashCustomEnd}" style="font-size:12px;padding:5px 10px;width:auto" onchange="dashCustomEnd=this.value;renderDashboard()">
+    </div>` : "";
+
+  // This week's follow-ups (always based on real dates, not filtered)
   const we = weekEnd();
-  const thisWeek = leads.filter(l=>l.followup&&l.followup<=we&&l.status!=="dead").sort((a,b)=>a.followup.localeCompare(b.followup));
+  const thisWeek = leads.filter(l=>l.followup&&parseDate(l.followup)<=parseDate(we)&&l.status!=="dead").sort((a,b)=>parseDate(a.followup)-parseDate(b.followup));
 
   const allEstimates=[]; const allInvoices=[];
-  leads.forEach(l=>{
+  fl.forEach(l=>{
     (l.estimates||[]).forEach(e=>allEstimates.push({...e,leadId:l.id,leadName:`${l.firstName} ${l.lastName||""}`.trim(),company:l.company,rep:l.rep}));
     (l.invoices||[]).forEach(inv=>allInvoices.push({...inv,leadId:l.id,leadName:`${l.firstName} ${l.lastName||""}`.trim(),company:l.company,rep:l.rep}));
   });
@@ -685,7 +714,14 @@ function renderDashboard() {
   const invRows=allInvoices.length?allInvoices.map(inv=>`<tr onclick="openLead('${inv.leadId}')" style="cursor:pointer"><td style="padding:9px 12px;font-size:13px;font-weight:600;color:#fff;border-bottom:0.5px solid var(--border)">${inv.leadName}</td><td style="padding:9px 12px;font-size:12px;color:var(--text3);border-bottom:0.5px solid var(--border)">${inv.company}</td><td style="padding:9px 12px;font-size:12px;color:var(--text2);border-bottom:0.5px solid var(--border)">${inv.num||"—"}</td><td style="padding:9px 12px;font-size:13px;font-weight:700;color:#86efac;font-family:'DM Mono',monospace;text-align:right;border-bottom:0.5px solid var(--border)">$${parseFloat(inv.amount||0).toLocaleString()}</td><td style="padding:9px 12px;font-size:11px;color:var(--text3);border-bottom:0.5px solid var(--border)">${inv.date?fmtDate(inv.date):"—"}</td><td style="padding:9px 12px;font-size:11px;color:var(--accent-bright);border-bottom:0.5px solid var(--border)">${inv.rep||"—"}</td></tr>`).join(""):`<tr><td colspan="6" style="padding:1.5rem;text-align:center;font-size:12px;color:var(--text3)">No invoices yet.</td></tr>`;
 
   document.getElementById("dashboard-content").innerHTML=`
-    <div class="dash-header"><h2>Overview</h2><span style="font-size:11px;color:var(--text3)">Updated ${now()}</span></div>
+    <div class="dash-header">
+      <h2>Overview</h2>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
+        <div style="display:flex;gap:5px;flex-wrap:wrap">${rangePills}</div>
+        ${customInputs}
+        <span style="font-size:11px;color:var(--text3)">Updated ${now()}</span>
+      </div>
+    </div>
 
     <!-- THIS WEEK'S FOLLOW-UPS -->
     <div class="followup-widget">
@@ -756,14 +792,16 @@ function renderDashboard() {
   setTimeout(()=>{
     if (charts.pipeline) charts.pipeline.destroy();
     const c1=document.getElementById("chart-pipeline")?.getContext("2d");
-    if (c1) charts.pipeline=new Chart(c1,{type:"doughnut",data:{labels:STATUSES.map(s=>STATUS_CFG[s].label),datasets:[{data:STATUSES.map(s=>leads.filter(l=>l.status===s).length),backgroundColor:["#a5b4fc","#7dd3fc","#d8b4fe","#f9a8d4","#fcd34d","#86efac","#fca5a5"],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:"right",labels:{color:"#f5eeff",font:{family:"DM Sans",size:11},padding:10,boxWidth:10}}},cutout:"65%"}});
+    if (c1) charts.pipeline=new Chart(c1,{type:"doughnut",data:{labels:STATUSES.map(s=>STATUS_CFG[s].label),datasets:[{data:STATUSES.map(s=>fl.filter(l=>l.status===s).length),backgroundColor:["#a5b4fc","#7dd3fc","#ff6b6b","#d8b4fe","#fdba74","#f9a8d4","#fcd34d","#86efac","#fca5a5"],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:"right",labels:{color:"#f5eeff",font:{family:"DM Sans",size:11},padding:10,boxWidth:10}}},cutout:"65%"}});
     if (charts.vertical) charts.vertical.destroy();
-    const verts={}; leads.forEach(l=>{const v=l.vertical||"Other";verts[v]=(verts[v]||0)+1;});
+    const verts={}; fl.forEach(l=>{const v=l.vertical||"Other";verts[v]=(verts[v]||0)+1;});
     const vKeys=Object.keys(verts).sort((a,b)=>verts[b]-verts[a]).slice(0,7);
     const c2=document.getElementById("chart-vertical")?.getContext("2d");
     if (c2) charts.vertical=new Chart(c2,{type:"bar",data:{labels:vKeys,datasets:[{data:vKeys.map(k=>verts[k]),backgroundColor:"rgba(192,96,255,0.25)",borderColor:"#c060ff",borderWidth:1.5,borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:"#d0b8ff",font:{family:"DM Sans",size:10}},grid:{display:false},border:{display:false}},y:{ticks:{color:"#d0b8ff",font:{family:"DM Mono",size:10},stepSize:1},grid:{color:"rgba(192,96,255,0.08)"},border:{display:false}}}}});
   },50);
 }
+
+function setDashRange(r) { dashRange=r; if(r!=="custom"){dashCustomStart="";dashCustomEnd="";} renderDashboard(); }
 
 // ---- LIST ----
 function renderList() {
