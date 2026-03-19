@@ -9,11 +9,11 @@
 <style>
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
 :root {
-  --bg:#1e0d3d; --bg2:#2a1550; --bg3:#3a1f6e; --bg4:#4e2a90;
-  --border:rgba(200,160,255,0.25); --border2:rgba(200,160,255,0.45);
-  --text:#ffffff; --text2:#f0e8ff; --text3:#c4aff0;
-  --accent:#b06eff; --accent-bright:#d49eff; --accent-dim:rgba(176,110,255,0.22);
-  --accent-hover:#c480ff;
+  --bg:#1a0835; --bg2:#260f52; --bg3:#3d1a82; --bg4:#5522aa;
+  --border:rgba(210,170,255,0.30); --border2:rgba(210,170,255,0.55);
+  --text:#ffffff; --text2:#f5eeff; --text3:#d0b8ff;
+  --accent:#c060ff; --accent-bright:#e090ff; --accent-dim:rgba(192,96,255,0.28);
+  --accent-hover:#d070ff;
   --new-bg:rgba(99,102,241,0.2); --new-cl:#a5b4fc;
   --contacted-bg:rgba(14,165,233,0.2); --contacted-cl:#7dd3fc;
   --samples-p-bg:rgba(168,85,247,0.2); --samples-p-cl:#d8b4fe;
@@ -594,6 +594,53 @@ function renderDashboard() {
     const ltv = rl.reduce((s,l)=>s+(l.invoices||[]).reduce((si,inv)=>si+(parseFloat(inv.amount)||0),0),0);
     return {name:r, total:rl.length, closed:rl.filter(l=>l.status==="closed").length, value:rl.filter(l=>l.status==="closed").reduce((s,l)=>s+(parseFloat(l.value)||0),0), ltv};
   });
+
+  // Build flat lists of all estimates and invoices across all leads
+  const allEstimates = [];
+  const allInvoices = [];
+  leads.forEach(l => {
+    (l.estimates||[]).forEach(e => allEstimates.push({...e, leadId:l.id, leadName:`${l.firstName} ${l.lastName||""}`.trim(), company:l.company, rep:l.rep}));
+    (l.invoices||[]).forEach(inv => allInvoices.push({...inv, leadId:l.id, leadName:`${l.firstName} ${l.lastName||""}`.trim(), company:l.company, rep:l.rep}));
+  });
+  allEstimates.sort((a,b)=>(b.date||"0").localeCompare(a.date||"0"));
+  allInvoices.sort((a,b)=>(b.date||"0").localeCompare(a.date||"0"));
+  const totalEstimates = allEstimates.reduce((s,e)=>s+(parseFloat(e.amount)||0),0);
+
+  const estRows = allEstimates.length ? allEstimates.map(e=>`
+    <tr onclick="openLead('${e.leadId}')" style="cursor:pointer">
+      <td style="padding:9px 12px;font-size:13px;font-weight:600;color:#fff;border-bottom:0.5px solid var(--border)">${e.leadName}</td>
+      <td style="padding:9px 12px;font-size:12px;color:var(--text3);border-bottom:0.5px solid var(--border)">${e.company}</td>
+      <td style="padding:9px 12px;font-size:12px;color:var(--text2);border-bottom:0.5px solid var(--border)">${e.num||"—"}</td>
+      <td style="padding:9px 12px;font-size:13px;font-weight:700;color:#fcd34d;font-family:'DM Mono',monospace;text-align:right;border-bottom:0.5px solid var(--border)">$${parseFloat(e.amount||0).toLocaleString()}</td>
+      <td style="padding:9px 12px;font-size:11px;color:var(--text3);border-bottom:0.5px solid var(--border)">${e.date?fmtDate(e.date):"—"}</td>
+      <td style="padding:9px 12px;font-size:11px;color:var(--accent-bright);border-bottom:0.5px solid var(--border)">${e.rep||"—"}</td>
+    </tr>`).join("") : `<tr><td colspan="6" style="padding:1.5rem;text-align:center;font-size:12px;color:var(--text3)">No estimates yet.</td></tr>`;
+
+  const invRows = allInvoices.length ? allInvoices.map(inv=>`
+    <tr onclick="openLead('${inv.leadId}')" style="cursor:pointer">
+      <td style="padding:9px 12px;font-size:13px;font-weight:600;color:#fff;border-bottom:0.5px solid var(--border)">${inv.leadName}</td>
+      <td style="padding:9px 12px;font-size:12px;color:var(--text3);border-bottom:0.5px solid var(--border)">${inv.company}</td>
+      <td style="padding:9px 12px;font-size:12px;color:var(--text2);border-bottom:0.5px solid var(--border)">${inv.num||"—"}</td>
+      <td style="padding:9px 12px;font-size:13px;font-weight:700;color:#86efac;font-family:'DM Mono',monospace;text-align:right;border-bottom:0.5px solid var(--border)">$${parseFloat(inv.amount||0).toLocaleString()}</td>
+      <td style="padding:9px 12px;font-size:11px;color:var(--text3);border-bottom:0.5px solid var(--border)">${inv.date?fmtDate(inv.date):"—"}</td>
+      <td style="padding:9px 12px;font-size:11px;color:var(--accent-bright);border-bottom:0.5px solid var(--border)">${inv.rep||"—"}</td>
+    </tr>`).join("") : `<tr><td colspan="6" style="padding:1.5rem;text-align:center;font-size:12px;color:var(--text3)">No invoices yet.</td></tr>`;
+
+  const finTable = (rows, id) => `
+    <div style="border:1px solid var(--border);border-radius:var(--radius-lg);overflow:auto">
+      <table style="width:100%;border-collapse:collapse;min-width:500px" id="${id}">
+        <thead><tr style="background:var(--bg3)">
+          <th style="padding:8px 12px;text-align:left;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;border-bottom:1px solid var(--border2)">Lead</th>
+          <th style="padding:8px 12px;text-align:left;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;border-bottom:1px solid var(--border2)">Company</th>
+          <th style="padding:8px 12px;text-align:left;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;border-bottom:1px solid var(--border2)">#</th>
+          <th style="padding:8px 12px;text-align:right;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;border-bottom:1px solid var(--border2)">Amount</th>
+          <th style="padding:8px 12px;text-align:left;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;border-bottom:1px solid var(--border2)">Date</th>
+          <th style="padding:8px 12px;text-align:left;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;border-bottom:1px solid var(--border2)">Rep</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
+
   document.getElementById("dashboard-content").innerHTML = `
     <div class="dash-header"><h2>Overview</h2><span style="font-size:11px;color:var(--text3)">Updated ${now()}</span></div>
     <div class="dash-grid">
@@ -612,6 +659,24 @@ function renderDashboard() {
         ${r.ltv>0?`<div class="rep-stat"><span>Lifetime value</span><span style="color:#86efac">$${r.ltv.toLocaleString()}</span></div>`:""}
       </div>`).join("")}</div>
     </div>`:""}
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:1.5rem">
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1.25rem">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
+          <h3 style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.1em">Estimates (${allEstimates.length})</h3>
+          <span style="font-size:14px;font-weight:700;color:#fcd34d;font-family:'DM Mono',monospace">$${totalEstimates.toLocaleString()}</span>
+        </div>
+        ${finTable(estRows,"est-table")}
+      </div>
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1.25rem">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
+          <h3 style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.1em">Invoices / LTV (${allInvoices.length})</h3>
+          <span style="font-size:14px;font-weight:700;color:#86efac;font-family:'DM Mono',monospace">$${totalLTV.toLocaleString()}</span>
+        </div>
+        ${finTable(invRows,"inv-table")}
+      </div>
+    </div>
+
     <div class="dash-charts">
       <div class="chart-card"><h3>Pipeline by stage</h3><div class="chart-wrap"><canvas id="chart-pipeline"></canvas></div></div>
       <div class="chart-card"><h3>Leads by vertical</h3><div class="chart-wrap"><canvas id="chart-vertical"></canvas></div></div>
