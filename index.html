@@ -9,11 +9,11 @@
 <style>
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
 :root {
-  --bg:#251245; --bg2:#301a58; --bg3:#3c2268; --bg4:#4a2c7e;
-  --border:rgba(200,160,255,0.18); --border2:rgba(200,160,255,0.32);
-  --text:#ffffff; --text2:#e0d6f8; --text3:#a898cc;
-  --accent:#a855f7; --accent-bright:#c084fc; --accent-dim:rgba(168,85,247,0.18);
-  --accent-hover:#b966ff;
+  --bg:#1e0d3d; --bg2:#2a1550; --bg3:#3a1f6e; --bg4:#4e2a90;
+  --border:rgba(200,160,255,0.25); --border2:rgba(200,160,255,0.45);
+  --text:#ffffff; --text2:#f0e8ff; --text3:#c4aff0;
+  --accent:#b06eff; --accent-bright:#d49eff; --accent-dim:rgba(176,110,255,0.22);
+  --accent-hover:#c480ff;
   --new-bg:rgba(99,102,241,0.2); --new-cl:#a5b4fc;
   --contacted-bg:rgba(14,165,233,0.2); --contacted-cl:#7dd3fc;
   --samples-p-bg:rgba(168,85,247,0.2); --samples-p-cl:#d8b4fe;
@@ -65,9 +65,9 @@ select option{background:#3c2268;color:#fff}
 .topbar-brand{font-size:15px;font-weight:700;color:#fff;display:flex;align-items:center;gap:10px;letter-spacing:-.3px}
 .topbar-brand .frog{font-size:20px}
 .topbar-nav{display:flex;gap:2px;margin-left:1.5rem}
-.nav-btn{font-family:'DM Sans',sans-serif;font-size:13px;padding:6px 16px;border-radius:var(--radius);border:none;cursor:pointer;background:transparent;color:var(--text3);transition:all .15s;font-weight:500}
-.nav-btn:hover{background:var(--bg3);color:var(--text)}
-.nav-btn.on{background:var(--accent-dim);color:var(--accent-bright);border:0.5px solid var(--border2)}
+.nav-btn{font-family:'DM Sans',sans-serif;font-size:13px;padding:6px 16px;border-radius:var(--radius);border:none;cursor:pointer;background:transparent;color:var(--text3);transition:all .15s;font-weight:600}
+.nav-btn:hover{background:var(--bg3);color:#fff}
+.nav-btn.on{background:var(--accent-dim);color:#fff;border:0.5px solid var(--border2)}
 .topbar-center{position:absolute;left:50%;transform:translateX(-50%)}
 .topbar-right{margin-left:auto;display:flex;align-items:center;gap:10px}
 .search-wrap{position:relative}
@@ -115,17 +115,17 @@ select option{background:#3c2268;color:#fff}
 .list-view{padding:1.5rem;display:flex;flex-direction:column;gap:.75rem;overflow:hidden}
 .list-toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .filter-pills{display:flex;gap:5px;flex-wrap:wrap}
-.fpill{font-family:'DM Sans',sans-serif;font-size:11px;padding:4px 12px;border-radius:20px;border:0.5px solid var(--border2);cursor:pointer;background:transparent;color:var(--text3);transition:all .15s;font-weight:500}
-.fpill:hover{color:var(--text2);border-color:var(--accent)}
-.fpill.on{background:var(--accent-dim);border-color:var(--accent-bright);color:var(--accent-bright)}
+.fpill{font-family:'DM Sans',sans-serif;font-size:11px;padding:4px 12px;border-radius:20px;border:0.5px solid var(--border2);cursor:pointer;background:var(--bg3);color:var(--text2);transition:all .15s;font-weight:600}
+.fpill:hover{color:#fff;border-color:var(--accent)}
+.fpill.on{background:var(--accent-dim);border-color:var(--accent-bright);color:#fff}
 .rep-pills{display:flex;gap:5px;flex-wrap:wrap;align-items:center}
 .rep-pill{font-family:'DM Sans',sans-serif;font-size:11px;padding:4px 12px;border-radius:20px;border:0.5px solid var(--border2);cursor:pointer;background:transparent;color:var(--text3);transition:all .15s;font-weight:500;display:flex;align-items:center;gap:5px}
 .rep-pill:hover{color:var(--text2);border-color:var(--accent)}
 .rep-pill.on{background:rgba(168,85,247,.25);border-color:var(--accent-bright);color:#fff}
 .table-wrap{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:auto;flex:1}
 table{width:100%;border-collapse:collapse;min-width:860px}
-th{padding:10px 14px;text-align:left;font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.09em;background:var(--bg3);border-bottom:1px solid var(--border2);white-space:nowrap;user-select:none}
-td{padding:10px 14px;font-size:13px;color:var(--text2);border-bottom:0.5px solid var(--border);transition:background .1s}
+th{padding:10px 14px;text-align:left;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.09em;background:var(--bg3);border-bottom:1px solid var(--border2);white-space:nowrap;user-select:none}
+td{padding:10px 14px;font-size:13px;font-weight:500;color:var(--text2);border-bottom:0.5px solid var(--border);transition:background .1s}
 tr:last-child td{border-bottom:none}
 tr:hover td{background:rgba(168,85,247,0.05)}
 .td-name{font-weight:600;color:#fff;cursor:pointer}
