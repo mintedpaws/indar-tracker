@@ -494,7 +494,12 @@ function dbToLead(row) {
     followup: row.followup || "",
     value: row.value || "",
     dateAdded: row.date_added || "",
-    activity: row.activity || []
+    activity: row.activity || [],
+    lead_date: row.lead_date || "",
+    closed_date: row.closed_date || "",
+    deal_notes: row.deal_notes || "",
+    estimates: Array.isArray(row.estimates) ? row.estimates : [],
+    invoices: Array.isArray(row.invoices) ? row.invoices : []
   };
 }
 function leadToDb(l) {
@@ -512,7 +517,12 @@ function leadToDb(l) {
     followup: l.followup,
     value: l.value,
     date_added: l.dateAdded,
-    activity: l.activity
+    activity: l.activity,
+    lead_date: l.lead_date || "",
+    closed_date: l.closed_date || "",
+    deal_notes: l.deal_notes || "",
+    estimates: l.estimates || [],
+    invoices: l.invoices || []
   };
 }
 
@@ -657,7 +667,8 @@ function renderDashboard() {
   const pipeVal = leads.filter(l => l.status !== "dead").reduce((s,l) => s + (parseFloat(l.value)||0), 0);
   const repStats = reps.map(r => {
     const rl = leads.filter(l => l.rep === r);
-    return {name:r, total:rl.length, closed:rl.filter(l=>l.status==="closed").length, value:rl.filter(l=>l.status==="closed").reduce((s,l)=>s+(parseFloat(l.value)||0),0)};
+    const ltv = rl.reduce((s,l) => s + (l.invoices||[]).reduce((si,inv)=>si+(parseFloat(inv.amount)||0),0), 0);
+    return {name:r, total:rl.length, closed:rl.filter(l=>l.status==="closed").length, value:rl.filter(l=>l.status==="closed").reduce((s,l)=>s+(parseFloat(l.value)||0),0), ltv};
   });
 
   document.getElementById("dashboard-content").innerHTML = `
@@ -674,7 +685,8 @@ function renderDashboard() {
         <div class="rep-card-name"><span class="rep-avatar">${repInitials(r.name)}</span>${r.name}</div>
         <div class="rep-stat"><span>Leads</span><span>${r.total}</span></div>
         <div class="rep-stat"><span>Closed</span><span>${r.closed}</span></div>
-        <div class="rep-stat"><span>Value</span><span>$${r.value.toLocaleString()}</span></div>
+        <div class="rep-stat"><span>Pipeline value</span><span>$${r.value.toLocaleString()}</span></div>
+        ${r.ltv > 0 ? `<div class="rep-stat"><span>Lifetime value</span><span style="color:#86efac">$${r.ltv.toLocaleString()}</span></div>` : ""}
       </div>`).join("")}</div>
     </div>` : ""}
     <div class="dash-charts">
@@ -882,6 +894,56 @@ function renderDetailBody(l) {
         <div><div class="detail-val">${l.title||"—"}</div><div class="detail-label">Title</div></div>
         <div><div class="detail-val">${l.vertical||"—"}</div><div class="detail-label">Vertical</div></div>
       </div>
+      ${(l.estimates||[]).length > 0 || (l.invoices||[]).length > 0 || l.deal_notes || l.lead_date || l.closed_date ? `
+      <div style="margin-top:1.25rem;padding-top:1rem;border-top:0.5px solid var(--border)">
+        <p style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:12px">Deal Details</p>
+        ${l.lead_date || l.closed_date ? `<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+          ${l.lead_date?`<div><div class="detail-val">${fmtDate(l.lead_date)}</div><div class="detail-label">Lead date</div></div>`:""}
+          ${l.closed_date?`<div><div class="detail-val">${fmtDate(l.closed_date)}</div><div class="detail-label">Closed date</div></div>`:""}
+        </div>`:""}
+        ${(l.estimates||[]).length > 0 ? `
+        <div style="margin-bottom:12px">
+          <p style="font-size:11px;font-weight:600;color:var(--text3);margin-bottom:6px">Estimates</p>
+          <table style="width:100%;border-collapse:collapse">
+            <thead><tr>
+              <th style="padding:5px 8px;text-align:left;font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;border-bottom:0.5px solid var(--border2)">Estimate #</th>
+              <th style="padding:5px 8px;text-align:right;font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;border-bottom:0.5px solid var(--border2)">Amount</th>
+              <th style="padding:5px 8px;text-align:left;font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;border-bottom:0.5px solid var(--border2)">Date</th>
+            </tr></thead>
+            <tbody>
+              ${(l.estimates||[]).map(e=>`<tr>
+                <td style="padding:7px 8px;font-size:12px;font-weight:600;color:#fff;border-bottom:0.5px solid var(--border)">${e.num||"—"}</td>
+                <td style="padding:7px 8px;font-size:12px;color:#fcd34d;text-align:right;font-family:'DM Mono',monospace;border-bottom:0.5px solid var(--border)">$${parseFloat(e.amount||0).toLocaleString()}</td>
+                <td style="padding:7px 8px;font-size:11px;color:var(--text3);border-bottom:0.5px solid var(--border)">${e.date?fmtDate(e.date):"—"}</td>
+              </tr>`).join("")}
+              <tr><td colspan="2" style="padding:6px 8px;font-size:11px;font-weight:700;color:var(--text3);text-align:right;text-transform:uppercase;letter-spacing:.07em">Total</td><td style="padding:6px 8px;font-size:12px;font-weight:700;color:#fcd34d;text-align:right;font-family:'DM Mono',monospace">$${(l.estimates||[]).reduce((s,e)=>s+(parseFloat(e.amount)||0),0).toLocaleString()}</td></tr>
+            </tbody>
+          </table>
+        </div>` : ""}
+        ${(l.invoices||[]).length > 0 ? `
+        <div style="margin-bottom:12px">
+          <p style="font-size:11px;font-weight:600;color:var(--text3);margin-bottom:6px">Invoices</p>
+          <table style="width:100%;border-collapse:collapse">
+            <thead><tr>
+              <th style="padding:5px 8px;text-align:left;font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;border-bottom:0.5px solid var(--border2)">Invoice #</th>
+              <th style="padding:5px 8px;text-align:right;font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;border-bottom:0.5px solid var(--border2)">Amount</th>
+              <th style="padding:5px 8px;text-align:left;font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;border-bottom:0.5px solid var(--border2)">Date</th>
+            </tr></thead>
+            <tbody>
+              ${(l.invoices||[]).map(inv=>`<tr>
+                <td style="padding:7px 8px;font-size:12px;font-weight:600;color:#fff;border-bottom:0.5px solid var(--border)">${inv.num||"—"}</td>
+                <td style="padding:7px 8px;font-size:12px;color:#86efac;text-align:right;font-family:'DM Mono',monospace;border-bottom:0.5px solid var(--border)">$${parseFloat(inv.amount||0).toLocaleString()}</td>
+                <td style="padding:7px 8px;font-size:11px;color:var(--text3);border-bottom:0.5px solid var(--border)">${inv.date?fmtDate(inv.date):"—"}</td>
+              </tr>`).join("")}
+            </tbody>
+          </table>
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 8px 0;border-top:0.5px solid var(--border2);margin-top:2px">
+            <span style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.07em">Lifetime Value</span>
+            <span style="font-size:16px;font-weight:700;color:#86efac;font-family:'DM Mono',monospace">$${(l.invoices||[]).reduce((s,inv)=>s+(parseFloat(inv.amount)||0),0).toLocaleString()}</span>
+          </div>
+        </div>` : ""}
+        ${l.deal_notes ? `<div><p style="font-size:11px;font-weight:600;color:var(--text3);margin-bottom:5px">Deal notes</p><div class="detail-val" style="white-space:pre-wrap;font-size:12px;line-height:1.6">${l.deal_notes}</div></div>` : ""}
+      </div>` : ""}
     </div>
     <div id="dtab-timeline" style="display:none">
       <div class="timeline" style="margin-bottom:1.5rem">${timeline}</div>
@@ -918,19 +980,59 @@ function renderDetailBody(l) {
           </select></div>
         <div class="fg"><label>Assign rep</label><select id="e-rep">${repOpts}</select></div>
       </div>
+
       <div style="margin-top:10px;padding-top:10px;border-top:0.5px solid var(--border)">
         <p style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">Deal Details</p>
         <div class="form-grid-2" style="margin-bottom:10px">
           <div class="fg"><label>Lead date</label><input id="e-lead_date" type="date" value="${l.lead_date||""}"></div>
           <div class="fg"><label>Closed date</label><input id="e-closed_date" type="date" value="${l.closed_date||""}"></div>
         </div>
-        <div class="form-grid-2" style="margin-bottom:10px">
-          <div class="fg"><label>Estimate #</label><input id="e-estimate_num" value="${l.estimate_num||""}" placeholder="e.g. EST-0042"></div>
-          <div class="fg"><label>Invoice #</label><input id="e-invoice_num" value="${l.invoice_num||""}" placeholder="e.g. INV-0042"></div>
-        </div>
-        <div class="fg" style="margin-bottom:10px"><label>Deal notes</label><textarea id="e-deal_notes" rows="3" style="width:100%;font-family:'DM Sans',sans-serif;font-size:13px;resize:vertical">${l.deal_notes||""}</textarea></div>
+        <div class="fg" style="margin-bottom:14px"><label>Deal notes</label><textarea id="e-deal_notes" rows="3" style="width:100%;font-family:'DM Sans',sans-serif;font-size:13px;resize:vertical">${l.deal_notes||""}</textarea></div>
       </div>
       <button class="btn btn-accent btn-sm" onclick="saveEdit()">Save changes</button>
+
+      <div style="margin-top:1.5rem;padding-top:1rem;border-top:0.5px solid var(--border)">
+        <p style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px">Estimates</p>
+        <div id="estimates-list">
+          ${(l.estimates||[]).length === 0 ? `<p style="font-size:12px;color:var(--text3);margin-bottom:10px">No estimates yet.</p>` :
+            (l.estimates||[]).map(e => `<div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:6px;align-items:center;margin-bottom:6px;padding:8px 10px;background:var(--bg3);border-radius:var(--radius);border:0.5px solid var(--border)">
+              <span style="font-size:12px;font-weight:600;color:#fff">${e.num||"—"}</span>
+              <span style="font-size:12px;color:#fcd34d;font-family:'DM Mono',monospace">$${parseFloat(e.amount||0).toLocaleString()}</span>
+              <span style="font-size:11px;color:var(--text3)">${e.date?fmtDate(e.date):"—"}</span>
+              <button class="btn btn-ghost btn-sm" style="color:#fca5a5;padding:3px 7px" onclick="removeEstimate('${e.id}')">✕</button>
+            </div>`).join("")}
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:6px;align-items:end;margin-top:6px">
+          <div class="fg"><label>Est. #</label><input id="new-est-num" placeholder="EST-001" style="font-size:12px"></div>
+          <div class="fg"><label>Amount ($)</label><input id="new-est-amount" type="number" placeholder="0" style="font-size:12px"></div>
+          <div class="fg"><label>Date</label><input id="new-est-date" type="date" style="font-size:12px"></div>
+          <button class="btn btn-sm btn-accent" onclick="addEstimate()" style="height:37px">+ Add</button>
+        </div>
+      </div>
+
+      <div style="margin-top:1.5rem;padding-top:1rem;border-top:0.5px solid var(--border)">
+        <p style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px">Invoices</p>
+        <div id="invoices-list">
+          ${(l.invoices||[]).length === 0 ? `<p style="font-size:12px;color:var(--text3);margin-bottom:10px">No invoices yet.</p>` :
+            (l.invoices||[]).map(inv => `<div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:6px;align-items:center;margin-bottom:6px;padding:8px 10px;background:var(--bg3);border-radius:var(--radius);border:0.5px solid var(--border)">
+              <span style="font-size:12px;font-weight:600;color:#fff">${inv.num||"—"}</span>
+              <span style="font-size:12px;color:#86efac;font-family:'DM Mono',monospace">$${parseFloat(inv.amount||0).toLocaleString()}</span>
+              <span style="font-size:11px;color:var(--text3)">${inv.date?fmtDate(inv.date):"—"}</span>
+              <button class="btn btn-ghost btn-sm" style="color:#fca5a5;padding:3px 7px" onclick="removeInvoice('${inv.id}')">✕</button>
+            </div>`).join("")}
+        </div>
+        ${(l.invoices||[]).length > 0 ? `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 4px;margin-bottom:8px">
+          <span style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.07em">Lifetime Value</span>
+          <span style="font-size:15px;font-weight:700;color:#86efac;font-family:'DM Mono',monospace">$${(l.invoices||[]).reduce((s,inv)=>s+(parseFloat(inv.amount)||0),0).toLocaleString()}</span>
+        </div>` : ""}
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:6px;align-items:end;margin-top:6px">
+          <div class="fg"><label>Inv. #</label><input id="new-inv-num" placeholder="INV-001" style="font-size:12px"></div>
+          <div class="fg"><label>Amount ($)</label><input id="new-inv-amount" type="number" placeholder="0" style="font-size:12px"></div>
+          <div class="fg"><label>Date</label><input id="new-inv-date" type="date" style="font-size:12px"></div>
+          <button class="btn btn-sm btn-accent" onclick="addInvoice()" style="height:37px">+ Add</button>
+        </div>
+      </div>
+
       <div style="margin-top:1.5rem;padding-top:1rem;border-top:0.5px solid var(--border)">
         <p style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">Manage reps</p>
         <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">
@@ -985,13 +1087,54 @@ async function quickUpdateField(field, value) {
 }
 async function saveEdit() {
   const lead = leads.find(l => l.id===editId); if(!lead) return;
-  ["firstName","lastName","email","phone","company","title","lead_date","closed_date","estimate_num","invoice_num","deal_notes"].forEach(f => { const el=document.getElementById("e-"+f); if(el) lead[f]=el.value; });
+  ["firstName","lastName","email","phone","company","title"].forEach(f => { const el=document.getElementById("e-"+f); if(el) lead[f]=el.value; });
   const ev = document.getElementById("e-vertical"); if(ev) lead.vertical = ev.value;
   const er = document.getElementById("e-rep"); if(er) lead.rep = er.value;
+  const eld = document.getElementById("e-lead_date"); if(eld) lead.lead_date = eld.value;
+  const ecd = document.getElementById("e-closed_date"); if(ecd) lead.closed_date = ecd.value;
+  const edn = document.getElementById("e-deal_notes"); if(edn) lead.deal_notes = edn.value;
   addActivity(lead, "note", "Lead details updated");
   await dbSaveLead(lead); render(); populateRepSelects();
   const btn = document.querySelector("#dtab-edit .btn-accent");
   if(btn) { btn.textContent="Saved!"; btn.style.background="#86efac"; btn.style.color="#1a0d2e"; setTimeout(()=>{btn.textContent="Save changes";btn.style.background="";btn.style.color="";},1500); }
+}
+async function addEstimate() {
+  const lead = leads.find(l => l.id===editId); if(!lead) return;
+  const num = document.getElementById("new-est-num")?.value.trim();
+  const amount = document.getElementById("new-est-amount")?.value;
+  const date = document.getElementById("new-est-date")?.value;
+  if (!num && !amount) return;
+  if (!lead.estimates) lead.estimates = [];
+  lead.estimates.push({id: uid(), num: num||"", amount: amount||"0", date: date||""});
+  await dbSaveLead(lead);
+  renderDetailBody(lead);
+  switchTab(document.querySelectorAll(".modal-tab")[2], "dtab-edit");
+}
+async function removeEstimate(estId) {
+  const lead = leads.find(l => l.id===editId); if(!lead) return;
+  lead.estimates = (lead.estimates||[]).filter(e => e.id !== estId);
+  await dbSaveLead(lead);
+  renderDetailBody(lead);
+  switchTab(document.querySelectorAll(".modal-tab")[2], "dtab-edit");
+}
+async function addInvoice() {
+  const lead = leads.find(l => l.id===editId); if(!lead) return;
+  const num = document.getElementById("new-inv-num")?.value.trim();
+  const amount = document.getElementById("new-inv-amount")?.value;
+  const date = document.getElementById("new-inv-date")?.value;
+  if (!num && !amount) return;
+  if (!lead.invoices) lead.invoices = [];
+  lead.invoices.push({id: uid(), num: num||"", amount: amount||"0", date: date||""});
+  await dbSaveLead(lead); render();
+  renderDetailBody(lead);
+  switchTab(document.querySelectorAll(".modal-tab")[2], "dtab-edit");
+}
+async function removeInvoice(invId) {
+  const lead = leads.find(l => l.id===editId); if(!lead) return;
+  lead.invoices = (lead.invoices||[]).filter(inv => inv.id !== invId);
+  await dbSaveLead(lead); render();
+  renderDetailBody(lead);
+  switchTab(document.querySelectorAll(".modal-tab")[2], "dtab-edit");
 }
 async function addRep() {
   const name = document.getElementById("new-rep-input")?.value.trim();
