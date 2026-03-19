@@ -277,11 +277,11 @@ tr:hover td{background:rgba(192,96,255,0.05)}
 
 <div id="app">
   <div class="topbar">
-    <div class="topbar-brand" onclick="showView('list')" style="cursor:pointer"><span class="frog">🐸</span>Indar Tracker</div>
+    <div class="topbar-brand" onclick="showView('dashboard')" style="cursor:pointer"><span class="frog">🐸</span>Indar Tracker</div>
     <nav class="topbar-nav">
-      <button class="nav-btn" onclick="showView('dashboard')">Dashboard</button>
+      <button class="nav-btn on" onclick="showView('dashboard')">Dashboard</button>
       <button class="nav-btn" onclick="showView('kanban')">Leads View</button>
-      <button class="nav-btn on" onclick="showView('list')">List View</button>
+      <button class="nav-btn" onclick="showView('list')">List View</button>
     </nav>
     <div class="topbar-center">
       <button class="btn btn-accent" onclick="openAddLead()" style="padding:10px 32px;font-size:15px;font-weight:700">+ Add lead</button>
@@ -518,7 +518,7 @@ async function loadAndStart() {
     document.getElementById("user-badge").textContent = "ME";
     populateRepSelects();
     // Default to list on mobile, list on desktop too
-    showView("list");
+    showView("dashboard");
   } catch(e) {
     document.getElementById("loading-screen").classList.remove("on");
     document.getElementById("login-screen").style.display = "flex";
