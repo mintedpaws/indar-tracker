@@ -298,7 +298,7 @@ tr:hover td{background:rgba(168,85,247,0.05)}
         <div class="table-wrap">
           <table>
             <thead><tr>
-              <th>Name</th><th>Company</th><th>Vertical</th><th>Rep</th><th>Stage</th><th>Follow-up</th><th>Last contact</th><th>Last note</th><th></th>
+              <th>Name</th><th>Company</th><th>Vertical</th><th>Rep</th><th>Stage</th><th>Lead date</th><th>Follow-up</th><th>Last contact</th><th>Last note</th><th></th>
             </tr></thead>
             <tbody id="tbody"></tbody>
           </table>
@@ -677,6 +677,9 @@ function renderList() {
       <td style="font-size:11px;color:var(--text3)">${l.vertical||"—"}</td>
       <td>${l.rep?`<span style="display:inline-flex;align-items:center;gap:5px"><span style="width:18px;height:18px;border-radius:50%;background:var(--accent-dim);border:1px solid var(--accent);display:inline-flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:var(--accent-bright)">${repInitials(l.rep)}</span><span style="font-size:12px">${l.rep}</span></span>`:'<span style="color:var(--text3);font-size:11px">—</span>'}</td>
       <td><select class="stage-select" style="background:${sc.bg};color:${sc.cl}" onchange="quickUpdateStatusFromList('${l.id}',this.value)" onclick="event.stopPropagation()">${statusOpts}</select></td>
+      <td style="font-size:12px;color:${l.lead_date?"var(--text2)":"var(--text3)"}">
+        ${l.lead_date?fmtDate(l.lead_date):"—"}
+      </td>
       <td onclick="event.stopPropagation()" style="min-width:120px">
         <input type="date" value="${l.followup||""}" title="Follow-up date"
           style="font-size:12px;padding:4px 8px;width:auto;min-width:110px;color:${l.followup?(fc==="overdue"?"#fca5a5":fc==="due-soon"?"#fcd34d":"var(--text2)"):"var(--text3)"};background:transparent;border-color:transparent;cursor:pointer"
