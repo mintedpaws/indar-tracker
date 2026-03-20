@@ -744,8 +744,8 @@ function renderDashboard() {
   const active=fl.filter(l=>!["dead","closed"].includes(l.status)).length;
   // Closed Deals = leads that have at least one invoice within the selected date range
   const closedDeals = leads.filter(l=>(l.invoices||[]).some(invoiceInRange)).length;
-  // Estimates Out = leads currently in estimate_sent stage
-  const estimatesOut = leads.filter(l=>l.status==="estimate_sent").length;
+  // Estimates Out = leads with at least one estimate in the selected date range (matches the estimates table)
+  const estimatesOut = leads.filter(l=>(l.estimates||[]).some(estimateInRange)).length;
 
   function invoiceInRange(inv) {
     if(!rangeStart) return true;
