@@ -132,7 +132,7 @@ select option{background:#3c2268;color:#fff}
 .card-list{display:none;flex:1;overflow-y:auto;gap:8px;padding:0}
 .lead-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:12px 14px;cursor:pointer;transition:border-color .15s}
 .lead-card:hover{border-color:var(--border2)}
-table{width:100%;border-collapse:collapse;min-width:920px}
+table{width:100%;border-collapse:collapse;min-width:820px}
 th{padding:11px 14px;text-align:left;font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;background:var(--bg3);border-bottom:1px solid var(--border2);white-space:nowrap;user-select:none;position:sticky;top:0;z-index:2}
 td{padding:14px 14px;font-size:14px;font-weight:500;color:#ede0ff;border-bottom:0.5px solid var(--border);transition:background .1s}
 tr:last-child td{border-bottom:none}
@@ -361,8 +361,8 @@ tr:hover td{background:rgba(192,96,255,0.07)!important}
               <th onclick="toggleSort('rep')" style="cursor:pointer;user-select:none">Rep <span id="sort-arrow-rep" style="opacity:.3">↕</span></th>
               <th onclick="toggleSort('status')" style="cursor:pointer;user-select:none">Stage <span id="sort-arrow-status" style="opacity:.3">↕</span></th>
               <th onclick="toggleSort('lead_date')" style="cursor:pointer;user-select:none" id="th-lead_date">Lead date <span id="sort-arrow-lead_date" style="opacity:.3">↕</span></th>
-              <th onclick="toggleSort('last_contact')" style="cursor:pointer;user-select:none" id="th-last_contact">Last contact <span id="sort-arrow-last_contact" style="opacity:.3">↕</span></th>
-              <th>Last note</th><th></th>
+              <th onclick="toggleSort('last_contact')" style="cursor:pointer;user-select:none" id="th-last_contact">Last activity <span id="sort-arrow-last_contact" style="opacity:.3">↕</span></th>
+              <th></th>
             </tr></thead>
             <tbody id="tbody"></tbody>
           </table>
@@ -572,7 +572,6 @@ async function loadAndStart() {
     document.getElementById("app").classList.add("on");
     document.getElementById("user-badge").textContent = "ME";
     populateRepSelects();
-    // Default to list on mobile, list on desktop too
     showView("dashboard");
   } catch(e) {
     document.getElementById("loading-screen").classList.remove("on");
@@ -604,7 +603,6 @@ window.addEventListener("DOMContentLoaded",()=>{
 history.pushState({app:true}, '', window.location.href);
 window.addEventListener("popstate", (e) => {
   history.pushState({app:true}, '', window.location.href);
-  // If a modal is open, close it instead of doing nothing
   ["detail-modal","add-modal","import-modal"].forEach(id => {
     const el = document.getElementById(id);
     if (el?.classList.contains("on")) el.classList.remove("on");
@@ -630,7 +628,6 @@ function parseDate(d) {
 function fmtDate(d) {
   if(!d) return "—";
   d = String(d).trim();
-  // Already MM/DD/YYYY or M/D/YYYY
   if(d.includes("/")) {
     const parts = d.split("/");
     if(parts.length===3) {
@@ -639,21 +636,19 @@ function fmtDate(d) {
     }
     return d;
   }
-  // ISO YYYY-MM-DD or YYYY-MM-DDTHH:MM:SS
   const iso = d.slice(0,10);
   const [y,m,day] = iso.split("-");
   if(!y||!m||!day) return d;
   return m+"/"+day+"/"+y.slice(2);
 }
 function fcClass(d) { if(!d) return ""; const diff=(parseDate(d)-new Date(today()).getTime())/86400000; if(diff<0) return "overdue"; if(diff<=3) return "due-soon"; return ""; }
-// Rep colors - distinct per rep name (consistent hash)
 const REP_PALETTE = [
-  {bg:"rgba(99,102,241,0.25)",border:"#818cf8",text:"#a5b4fc"},   // indigo
-  {bg:"rgba(236,72,153,0.2)", border:"#f472b6",text:"#f9a8d4"},   // pink
-  {bg:"rgba(16,185,129,0.2)", border:"#34d399",text:"#6ee7b7"},   // emerald
-  {bg:"rgba(245,158,11,0.2)", border:"#fbbf24",text:"#fcd34d"},   // amber
-  {bg:"rgba(239,68,68,0.2)",  border:"#f87171",text:"#fca5a5"},   // red
-  {bg:"rgba(14,165,233,0.2)", border:"#38bdf8",text:"#7dd3fc"},   // sky
+  {bg:"rgba(99,102,241,0.25)",border:"#818cf8",text:"#a5b4fc"},
+  {bg:"rgba(236,72,153,0.2)", border:"#f472b6",text:"#f9a8d4"},
+  {bg:"rgba(16,185,129,0.2)", border:"#34d399",text:"#6ee7b7"},
+  {bg:"rgba(245,158,11,0.2)", border:"#fbbf24",text:"#fcd34d"},
+  {bg:"rgba(239,68,68,0.2)",  border:"#f87171",text:"#fca5a5"},
+  {bg:"rgba(14,165,233,0.2)", border:"#38bdf8",text:"#7dd3fc"},
 ];
 function repColor(name) {
   if(!name) return REP_PALETTE[0];
@@ -728,7 +723,6 @@ function render() {
 
 // ---- DASHBOARD ----
 function renderDashboard() {
-  // Date range filter
   const t = today();
   let rangeStart = "", rangeEnd = t;
   if (dashRange==="week") { const d=new Date(); d.setDate(d.getDate()-d.getDay()); rangeStart=d.toISOString().slice(0,10); }
@@ -751,7 +745,6 @@ function renderDashboard() {
   const active=fl.filter(l=>!["dead","closed"].includes(l.status)).length;
   const overdue=leads.filter(l=>l.followup&&parseDate(l.followup)<parseDate(t)&&l.status!=="dead").length;
 
-  // All invoices filtered by invoice date within range
   function invoiceInRange(inv) {
     if(!rangeStart) return true;
     const d = inv.date||"";
@@ -787,7 +780,6 @@ function renderDashboard() {
       <input type="date" value="${dashCustomEnd}" style="font-size:12px;padding:5px 10px;width:auto" onchange="dashCustomEnd=this.value;renderDashboard()">
     </div>` : "";
 
-  // This week's follow-ups (always based on real dates, not filtered)
   const we = weekEnd();
   const thisWeek = leads.filter(l=>l.followup&&parseDate(l.followup)<=parseDate(we)&&l.status!=="dead").sort((a,b)=>parseDate(a.followup)-parseDate(b.followup));
 
@@ -815,7 +807,6 @@ function renderDashboard() {
       </div>
     </div>
 
-    <!-- LTV HERO -->
     <div class="ltv-card" onclick="goToList('has_invoices')" style="cursor:pointer;background:linear-gradient(135deg,rgba(34,197,94,0.18),rgba(16,185,129,0.08));border:1px solid rgba(34,197,94,0.4);border-radius:var(--radius-lg);padding:1.25rem 1.5rem;margin-bottom:1rem;position:relative;overflow:hidden">
       <div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,#86efac,#34d399)"></div>
       <div style="font-size:11px;font-weight:700;color:#86efac;text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px">💰 Lifetime Value</div>
@@ -823,14 +814,12 @@ function renderDashboard() {
       <div style="font-size:12px;color:rgba(134,239,172,0.6);margin-top:6px">${newAccounts} account${newAccounts!==1?"s":""} invoiced</div>
     </div>
 
-    <!-- STAT CARDS -->
     <div class="dash-grid" style="margin-bottom:1rem">
       <div class="dash-stat" onclick="goToList('all')"><div class="dash-stat-num">${total}</div><div class="dash-stat-label">Total leads</div><div class="dash-stat-sub">${active} active</div></div>
       <div class="dash-stat" onclick="goToList('closed')"><div class="dash-stat-num" style="color:#86efac">${closed}</div><div class="dash-stat-label">Closed</div></div>
       <div class="dash-stat" onclick="showView('list');setFilter('overdue');listDateStart='';listDateEnd=''"><div class="dash-stat-num" style="color:${overdue>0?"#fca5a5":"#fff"}">${overdue}</div><div class="dash-stat-label">Overdue</div></div>
     </div>
 
-    <!-- FOLLOW-UPS -->
     <div class="followup-widget">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:${thisWeek.length?"12px":"0"}">
         <h3 style="font-size:13px;font-weight:700;color:#fcd34d;display:flex;align-items:center;gap:8px">📅 Follow-ups <span style="background:rgba(252,211,77,0.2);color:#fcd34d;font-size:11px;padding:2px 8px;border-radius:20px;font-family:'DM Mono',monospace">${thisWeek.length}</span></h3>
@@ -854,7 +843,6 @@ function renderDashboard() {
       ${thisWeek.length>8?`<p style="font-size:11px;color:var(--text3);margin-top:8px;text-align:center">+${thisWeek.length-8} more</p>`:""}
     </div>
 
-    <!-- REPS -->
     ${repStats.length>0?`<div style="margin-bottom:1.5rem">
       <p class="section-label" style="margin-bottom:10px">Reps</p>
       <div class="rep-grid">${repStats.map(r=>`<div class="rep-card" onclick="goToList('all','${r.name}')">
@@ -898,15 +886,11 @@ function renderDashboard() {
     const vKeys=Object.keys(verts).sort((a,b)=>verts[b]-verts[a]).slice(0,7);
     const c2=document.getElementById("chart-vertical")?.getContext("2d");
     if (c2) charts.vertical=new Chart(c2,{type:"bar",data:{labels:vKeys,datasets:[{data:vKeys.map(k=>verts[k]),backgroundColor:"rgba(192,96,255,0.25)",borderColor:"#c060ff",borderWidth:1.5,borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:"#d0b8ff",font:{family:"DM Sans",size:10}},grid:{display:false},border:{display:false}},y:{ticks:{color:"#d0b8ff",font:{family:"DM Mono",size:10},stepSize:1},grid:{color:"rgba(192,96,255,0.08)"},border:{display:false}}}}});
-
-    // Invoices by vertical
     if (charts.invVertical) charts.invVertical.destroy();
     const invVerts={}; allInvoices.forEach(inv=>{const lead=leads.find(l=>l.id===inv.leadId); const v=(lead?.vertical)||"Other"; invVerts[v]=(invVerts[v]||0)+(parseFloat(inv.amount)||0);});
     const ivKeys=Object.keys(invVerts).sort((a,b)=>invVerts[b]-invVerts[a]).slice(0,7);
     const c3=document.getElementById("chart-inv-vertical")?.getContext("2d");
     if (c3) charts.invVertical=new Chart(c3,{type:"bar",data:{labels:ivKeys.length?ivKeys:["No data"],datasets:[{data:ivKeys.length?ivKeys.map(k=>invVerts[k]):[0],backgroundColor:"rgba(34,197,94,0.25)",borderColor:"#86efac",borderWidth:1.5,borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:"#86efac",font:{family:"DM Sans",size:10}},grid:{display:false},border:{display:false}},y:{ticks:{color:"#86efac",font:{family:"DM Mono",size:10},callback:v=>"$"+v.toLocaleString()},grid:{color:"rgba(34,197,94,0.08)"},border:{display:false}}}}});
-
-    // Estimates by vertical
     if (charts.estVertical) charts.estVertical.destroy();
     const estVerts={}; allEstimates.forEach(est=>{const lead=leads.find(l=>l.id===est.leadId); const v=(lead?.vertical)||"Other"; estVerts[v]=(estVerts[v]||0)+(parseFloat(est.amount)||0);});
     const evKeys=Object.keys(estVerts).sort((a,b)=>estVerts[b]-estVerts[a]).slice(0,7);
@@ -933,7 +917,6 @@ function renderFollowUp() {
   const flagged = leads.filter(l=>l.flagged);
   const total = flagged.length;
 
-  // Rep filter pills
   const repPills = `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:1.25rem">
     <button onclick="fuRepFilter=\'\';renderFollowUp()" style="font-family:'DM Sans',sans-serif;font-size:12px;padding:5px 14px;border-radius:20px;border:0.5px solid ${!fuRepFilter?'var(--accent-bright)':' var(--border2)'};background:${!fuRepFilter?'var(--accent-dim)':' transparent'};color:${!fuRepFilter?'#fff':'var(--text3)'};cursor:pointer;font-weight:600">All (${total})</button>
     ${reps.map(r=>{const c=repColor(r);const n=flagged.filter(l=>l.rep===r).length;return `<button onclick="fuRepFilter='${r}';renderFollowUp()" style="font-family:'DM Sans',sans-serif;font-size:12px;padding:5px 14px;border-radius:20px;border:0.5px solid ${fuRepFilter===r?c.border:'var(--border2)'};background:${fuRepFilter===r?c.bg:'transparent'};color:${fuRepFilter===r?c.text:'var(--text3)'};cursor:pointer;font-weight:600">${r} (${n})</button>`;}).join("")}
@@ -948,7 +931,6 @@ function renderFollowUp() {
     const fc=l.followup?fcClass(l.followup):"";
     const c=repColor(l.rep||"");
     return `<div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);margin-bottom:10px;overflow:hidden">
-      <!-- Header row -->
       <div style="display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:0.5px solid var(--border);cursor:pointer" onclick="openLead('${l.id}')">
         <div style="flex:1;min-width:0">
           <span style="font-size:14px;font-weight:700;color:#fff">${l.company||""}</span>
@@ -961,15 +943,11 @@ function renderFollowUp() {
           ${l.followup?`<span style="font-size:11px;font-family:'DM Mono',monospace;color:${fc==="overdue"?"#fca5a5":fc==="due-soon"?"#fcd34d":"var(--text3)"};padding:2px 8px;background:${fc==="overdue"?"rgba(239,68,68,0.1)":fc==="due-soon"?"rgba(252,211,77,0.1)":"transparent"};border-radius:4px">${fc==="overdue"?"⚠ ":""}${fmtDate(l.followup)}</span>`:""}
         </div>
       </div>
-
-      <!-- Contact + last note row -->
       <div style="padding:10px 14px;border-bottom:0.5px solid var(--border);display:flex;align-items:center;gap:16px;font-size:12px;color:var(--text3);flex-wrap:wrap">
         ${l.phone&&l.phone!=="—"?`<span style="color:var(--text2)">📞 ${l.phone}</span>`:""}
         ${l.email?`<span style="color:var(--text2)">✉ ${l.email}</span>`:""}
         ${lastNote?`<span style="color:var(--text3);font-style:italic;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:400px">"${lastNote.text.slice(0,80)}${lastNote.text.length>80?"…":""}"</span>`:""}
       </div>
-
-      <!-- Indar questions if any -->
       ${indarQs.length?`<div style="padding:10px 14px;border-bottom:0.5px solid var(--border);background:rgba(252,211,77,0.06)">
         ${indarQs.map((q,qi)=>`<div style="display:flex;gap:8px;align-items:baseline;margin-bottom:4px">
           <span style="font-size:12px;font-weight:800;color:#fcd34d;white-space:nowrap">Question From Indar:</span>
@@ -977,8 +955,6 @@ function renderFollowUp() {
           <button onclick="deleteIndarNote('${l.id}',${qi})" style="font-family:'DM Sans',sans-serif;font-size:10px;padding:2px 7px;border-radius:4px;border:0.5px solid rgba(239,68,68,0.3);background:rgba(239,68,68,0.08);color:#fca5a5;cursor:pointer;flex-shrink:0">✕ Delete</button>
         </div>`).join("")}
       </div>`:""}
-
-      <!-- Actions row -->
       <div style="display:flex;align-items:center;gap:8px;padding:10px 14px">
         <input id="fu-note-${l.id}" placeholder="Add a note..." style="flex:1;font-size:12px;padding:6px 10px;background:var(--bg3);border:0.5px solid var(--border2);border-radius:6px;color:var(--text)"
           onkeydown="if(event.key==='Enter')markFollowUpDone('${l.id}')">
@@ -999,15 +975,12 @@ function renderFollowUp() {
       </div>
       <span style="font-size:13px;font-weight:700;color:${total>0?"#fcd34d":"#86efac"}">${total} lead${total!==1?"s":""} pending</span>
     </div>
-
     ${repPills}
-
     ${filtered.length===0?`<div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:3rem;text-align:center">
       <div style="font-size:32px;margin-bottom:12px">${total===0?"✅":"🔍"}</div>
       <p style="font-size:15px;font-weight:600;color:#fff;margin-bottom:6px">${total===0?"All caught up!":"No leads for this rep"}</p>
       <p style="font-size:13px;color:var(--text3)">${total===0?"Flag leads from List View using the 🔕 button.":"Switch rep filter above to see others."}</p>
     </div>`:""}
-
     ${filtered.map(leadRow).join("")}`;
 }
 async function deleteIndarNote(id, index) {
@@ -1019,7 +992,6 @@ async function deleteIndarNote(id, index) {
   await dbSaveLead(lead);
   render();
 }
-
 async function saveIndarNote(id) {
   const lead=leads.find(l=>l.id===id); if(!lead) return;
   const inp=document.getElementById("fu-indar-"+id);
@@ -1030,7 +1002,6 @@ async function saveIndarNote(id) {
   showToast("✓ Question sent to "+lead.rep,false,true);
   render();
 }
-
 async function markFollowUpDone(id) {
   const lead=leads.find(l=>l.id===id); if(!lead) return;
   const noteEl=document.getElementById("fu-note-"+id);
@@ -1043,7 +1014,6 @@ async function markFollowUpDone(id) {
   render();
   showToast("✓ Follow-up marked complete",false,true);
 }
-
 async function markAllDone(rep) {
   const toMark=leads.filter(l=>l.flagged&&l.rep===rep);
   for(const lead of toMark) {
@@ -1058,7 +1028,6 @@ async function markAllDone(rep) {
 
 // ---- LIST ----
 function renderList() {
-  // Date range banner
   const rangeLabels = {week:"This week",month:"This month",year:"This year",custom:"Custom range"};
   const rangeBanner = (listDateStart && dashRange!=="all") ? `
     <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:rgba(192,96,255,0.12);border:0.5px solid var(--accent);border-radius:var(--radius);margin-bottom:8px;font-size:12px;color:var(--accent-bright)">
@@ -1078,7 +1047,6 @@ function renderList() {
     const ms=!searchQ||[l.firstName,l.lastName,l.company,l.email,l.vertical,l.rep].some(f=>f?.toLowerCase().includes(searchQ));
     if(!ms) return false;
     if(filterRep&&l.rep!==filterRep) return false;
-    // Apply date range if set
     if(listDateStart) {
       const d = l.lead_date||l.dateAdded||"";
       if(!d) return false;
@@ -1109,7 +1077,6 @@ function renderList() {
     if(sortKey==="lead_date") return dir("lead_date")*(parseDate(a.lead_date)-parseDate(b.lead_date));
     return parseDate(a.followup)-parseDate(b.followup);
   });
-  // Update all sort arrows
   const allSortCols = ["company","name","vertical","rep","status","lead_date","last_contact"];
   allSortCols.forEach(k=>{
     const el=document.getElementById("sort-arrow-"+k);
@@ -1164,12 +1131,15 @@ function renderList() {
       </div>`;
     }).join("");
   }
+
+  // ---- DESKTOP TABLE ROWS ----
   tbody.innerHTML=fil.map(l=>{
     const sc=STATUS_CFG[l.status]||STATUS_CFG.new;
-    const fc=fcClass(l.followup);
     const lastNote=(l.activity||[]).filter(a=>a.type==="note"||a.type==="contact").slice(-1)[0];
-    const statusOpts=STATUSES.map(s=>`<option value="${s}"${l.status===s?" selected":""}>${STATUS_CFG[s].label}</option>`).join("");
+    // Use the activity timestamp if available, else fall back to last_contact_date
+    const noteDate = lastNote ? (lastNote.ts || "") : "";
     const lcClass=l.last_contact_date&&((new Date().getTime()-parseDate(l.last_contact_date))/86400000)>14?"overdue":"";
+    const statusOpts=STATUSES.map(s=>`<option value="${s}"${l.status===s?" selected":""}>${STATUS_CFG[s].label}</option>`).join("");
     return `<tr>
       <td class="td-company" style="cursor:pointer;font-weight:700;font-size:14px" onclick="openLead('${l.id}')">${l.company||""}</td>
       <td class="td-name" onclick="openLead('${l.id}')" style="font-size:12px;color:var(--text3);font-weight:500">${l.firstName||""} ${l.lastName||""}</td>
@@ -1185,17 +1155,14 @@ function renderList() {
       <td>${repBadge(l.rep)}</td>
       <td><select class="stage-select" style="background:${sc.bg};color:${sc.cl}" onchange="quickUpdateStatusFromList('${l.id}',this.value)" onclick="event.stopPropagation()">${statusOpts}</select></td>
       <td style="font-size:12px;color:${l.lead_date?"var(--text2)":"var(--text3)"}"> ${l.lead_date?fmtDate(l.lead_date):"—"}</td>
-      <td onclick="event.stopPropagation()" style="min-width:120px">
-        <input type="date" value="${l.last_contact_date||""}" title="Last contact date"
-          style="font-size:12px;padding:4px 8px;width:auto;min-width:110px;color:${l.last_contact_date?(lcClass==="overdue"?"#fca5a5":"var(--text2)"):"var(--text3)"};background:transparent;border-color:transparent;cursor:pointer"
-          onmouseover="this.style.borderColor='var(--border2)'" onmouseout="this.style.borderColor='transparent'"
-          onchange="inlineUpdate('${l.id}','last_contact_date',this.value);this.style.color=this.value?'var(--text2)':'var(--text3)'">
-      </td>
-      <td onclick="event.stopPropagation()" style="max-width:200px" title="Click to add note">
-        <span id="note-display-${l.id}" style="font-size:11px;color:var(--text3);cursor:pointer;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:4px 2px;border-radius:4px"
+
+      <!-- MERGED: Last Activity = note text + dated contact picker below -->
+      <td onclick="event.stopPropagation()" style="min-width:200px;max-width:260px">
+        <span id="note-display-${l.id}"
+          style="font-size:12px;color:${lastNote?"var(--text2)":"var(--text3)"};cursor:pointer;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:3px 4px;border-radius:4px;line-height:1.4"
           onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background='transparent'"
-          onclick="openInlineNote('${l.id}',this)">${lastNote?lastNote.text.slice(0,50)+(lastNote.text.length>50?"…":""):"+ note"}</span>
-        <div id="note-input-${l.id}" style="display:none;gap:4px">
+          onclick="openInlineNote('${l.id}',this)">${lastNote?lastNote.text.slice(0,55)+(lastNote.text.length>55?"…":""):"+ note"}</span>
+        <div id="note-input-${l.id}" style="display:none;flex-direction:column;gap:4px">
           <input id="note-val-${l.id}" placeholder="Add note..." style="font-size:12px;padding:5px 8px"
             onkeydown="if(event.key==='Enter')saveInlineNote('${l.id}');if(event.key==='Escape')closeInlineNote('${l.id}')">
           <div style="display:flex;gap:4px;margin-top:4px">
@@ -1203,7 +1170,14 @@ function renderList() {
             <button class="btn btn-ghost btn-sm" onclick="closeInlineNote('${l.id}')">✕</button>
           </div>
         </div>
+        <div onclick="event.stopPropagation()" style="display:flex;align-items:center;gap:4px;margin-top:4px">
+          <input type="date" value="${l.last_contact_date||""}" title="Last contact date"
+            style="font-size:10px;padding:2px 5px;width:auto;min-width:100px;color:${l.last_contact_date?(lcClass==="overdue"?"#fca5a5":"var(--text3)"):"var(--text3)"};background:transparent;border-color:transparent;cursor:pointer;font-family:'DM Mono',monospace"
+            onmouseover="this.style.borderColor='var(--border2)'" onmouseout="this.style.borderColor='transparent'"
+            onchange="inlineUpdate('${l.id}','last_contact_date',this.value);this.style.color=this.value?(${lcClass==="overdue"?true:false}?'#fca5a5':'var(--text3)'):'var(--text3)'">
+        </div>
       </td>
+
       <td style="text-align:right;white-space:nowrap">
         <button onclick="event.stopPropagation();toggleFlag('${l.id}')" title="${l.flagged?'Remove from follow-up':'Add to rep follow-up'}" style="background:${l.flagged?'rgba(252,211,77,0.15)':'transparent'};border:0.5px solid ${l.flagged?'rgba(252,211,77,0.5)':'transparent'};border-radius:6px;padding:3px 7px;cursor:pointer;font-size:14px;margin-right:4px;transition:all .15s">${l.flagged?'🔔':'🔕'}</button>
         <button class="btn btn-ghost btn-sm" onclick="openLead('${l.id}')">View</button>
@@ -1213,7 +1187,6 @@ function renderList() {
 }
 function setFilter(s){filterStatus=s;listDateStart="";listDateEnd="";renderList();}
 function goToList(filter, rep) {
-  // Carry current dashboard date range into list view
   if (dashRange==="all") { listDateStart=""; listDateEnd=""; }
   else if (dashRange==="week") { const d=new Date(); d.setDate(d.getDate()-d.getDay()); listDateStart=d.toISOString().slice(0,10); listDateEnd=weekEnd(); }
   else if (dashRange==="month") { const t=today(); listDateStart=t.slice(0,7)+"-01"; listDateEnd=t; }
@@ -1252,10 +1225,13 @@ async function saveInlineNote(id) {
   const text=inp?.value.trim(); if(!text) return closeInlineNote(id);
   const lead=leads.find(l=>l.id===id); if(!lead) return;
   addActivity(lead,"note",text);
+  // Auto-set last contact date to today when a note is saved
+  lead.last_contact_date = today();
   await dbSaveLead(lead);
   const display=document.getElementById("note-display-"+id);
-  if(display){display.textContent=text.slice(0,50)+(text.length>50?"…":"");display.style.display="block";}
+  if(display){display.textContent=text.slice(0,55)+(text.length>55?"…":"");display.style.display="block";display.style.color="var(--text2)";}
   document.getElementById("note-input-"+id).style.display="none";
+  render(); // re-render to update the date picker value
 }
 function closeInlineNote(id) {
   const display=document.getElementById("note-display-"+id);
@@ -1430,7 +1406,6 @@ function renderDetailBody(l) {
         <button class="btn btn-accent btn-sm" id="save-edit-btn" onclick="saveEdit()">Save notes</button>
       </div>
 
-      <!-- Estimates collapsible -->
       <div>
         <div class="collapsible-header" onclick="toggleSection('est-body','est-arrow')">
           <div style="display:flex;align-items:center;gap:8px">
@@ -1442,7 +1417,6 @@ function renderDetailBody(l) {
         <div id="est-body" style="display:none;padding-bottom:14px">${estSection}</div>
       </div>
 
-      <!-- Invoices collapsible -->
       <div>
         <div class="collapsible-header" onclick="toggleSection('inv-body','inv-arrow')">
           <div style="display:flex;align-items:center;gap:8px">
@@ -1474,7 +1448,6 @@ function toggleSection(bodyId, arrowId) {
   body.style.display = open?"block":"none";
   if (arrow) arrow.classList.toggle("open",open);
 }
-
 function switchTab(btn,tabId) {
   document.querySelectorAll(".modal-tab").forEach(b=>b.classList.remove("on")); btn.classList.add("on");
   ["dtab-overview","dtab-timeline"].forEach(t=>{const el=document.getElementById(t);if(el)el.style.display="none";});
@@ -1484,6 +1457,7 @@ async function submitComment() {
   const text=document.getElementById("comment-input")?.value.trim(); if(!text) return;
   const lead=leads.find(x=>x.id===editId); if(!lead) return;
   addActivity(lead,"note",text);
+  lead.last_contact_date = today(); // also update last contact date when modal note added
   await dbSaveLead(lead);
   document.getElementById("comment-input").value="";
   renderDetailBody(lead);
