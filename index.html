@@ -744,8 +744,8 @@ function renderDashboard() {
   const active=fl.filter(l=>!["dead","closed"].includes(l.status)).length;
   // Closed Deals = leads that have at least one invoice within the selected date range
   const closedDeals = leads.filter(l=>(l.invoices||[]).some(invoiceInRange)).length;
-  // New Customers = same set (unique leads with invoices in range)
-  const newCustomers = closedDeals;
+  // Estimates Out = leads currently in estimate_sent stage
+  const estimatesOut = leads.filter(l=>l.status==="estimate_sent").length;
 
   function invoiceInRange(inv) {
     if(!rangeStart) return true;
@@ -819,7 +819,7 @@ function renderDashboard() {
     <div class="dash-grid" style="margin-bottom:1rem">
       <div class="dash-stat" onclick="goToList('all')"><div class="dash-stat-num">${total}</div><div class="dash-stat-label">Total leads</div><div class="dash-stat-sub">${active} active</div></div>
       <div class="dash-stat" onclick="goToList('has_invoices')"><div class="dash-stat-num" style="color:#86efac">${closedDeals}</div><div class="dash-stat-label">Closed Deals</div><div class="dash-stat-sub">invoiced${rangeStart?" this period":""}</div></div>
-      <div class="dash-stat" onclick="goToList('has_invoices')"><div class="dash-stat-num" style="color:#a5b4fc">${newCustomers}</div><div class="dash-stat-label">New Customers</div><div class="dash-stat-sub">with invoices${rangeStart?" this period":""}</div></div>
+      <div class="dash-stat" onclick="showView('list');setFilter('estimate_sent');listDateStart='';listDateEnd=''"><div class="dash-stat-num" style="color:#fcd34d">${estimatesOut}</div><div class="dash-stat-label">Estimates Out</div><div class="dash-stat-sub">awaiting decision</div></div>
     </div>
 
     <div class="followup-widget">
