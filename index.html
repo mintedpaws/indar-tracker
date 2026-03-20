@@ -319,6 +319,7 @@ tr:hover td{background:rgba(192,96,255,0.05)}
     <div class="panel" id="panel-list">
       <div class="list-view">
         <div class="list-toolbar">
+          <div id="list-range-banner"></div>
           <div class="filter-pills" id="filter-pills"></div>
           <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
             <select id="sort-select" style="width:auto;font-size:12px;padding:5px 10px" onchange="renderList()">
@@ -482,6 +483,7 @@ const STATUSES = Object.keys(STATUS_CFG);
 
 let leads = [], reps = [], currentUser = null;
 let filterStatus = "all", filterRep = "", searchQ = "", editId = null;
+let listDateStart = "", listDateEnd = ""; // date range context carried from dashboard
 let sortDir = {}; // tracks asc/desc per column key
 let dashRange = "all", dashCustomStart = "", dashCustomEnd = "";
 let charts = {}, importPreviewData = [];
@@ -771,7 +773,7 @@ function renderDashboard() {
     </div>
 
     <!-- LTV HERO -->
-    <div class="ltv-card" onclick="showView('list');setFilter('has_invoices')" style="cursor:pointer;background:linear-gradient(135deg,rgba(34,197,94,0.18),rgba(16,185,129,0.08));border:1px solid rgba(34,197,94,0.4);border-radius:var(--radius-lg);padding:1.25rem 1.5rem;margin-bottom:1rem;position:relative;overflow:hidden">
+    <div class="ltv-card" onclick="goToList('has_invoices')" style="cursor:pointer;background:linear-gradient(135deg,rgba(34,197,94,0.18),rgba(16,185,129,0.08));border:1px solid rgba(34,197,94,0.4);border-radius:var(--radius-lg);padding:1.25rem 1.5rem;margin-bottom:1rem;position:relative;overflow:hidden">
       <div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,#86efac,#34d399)"></div>
       <div style="font-size:11px;font-weight:700;color:#86efac;text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px">💰 Lifetime Value</div>
       <div style="font-size:clamp(28px,8vw,48px);font-weight:700;color:#86efac;letter-spacing:-2px;font-family:'DM Mono',monospace;line-height:1">$${totalLTV.toLocaleString()}</div>
@@ -780,9 +782,9 @@ function renderDashboard() {
 
     <!-- STAT CARDS -->
     <div class="dash-grid" style="margin-bottom:1rem">
-      <div class="dash-stat" onclick="showView('list');setFilter('all')"><div class="dash-stat-num">${total}</div><div class="dash-stat-label">Total leads</div><div class="dash-stat-sub">${active} active</div></div>
-      <div class="dash-stat" onclick="showView('list');setFilter('closed')"><div class="dash-stat-num" style="color:#86efac">${closed}</div><div class="dash-stat-label">Closed</div></div>
-      <div class="dash-stat" onclick="showView('list');setFilter('overdue')"><div class="dash-stat-num" style="color:${overdue>0?"#fca5a5":"#fff"}">${overdue}</div><div class="dash-stat-label">Overdue</div></div>
+      <div class="dash-stat" onclick="goToList('all')"><div class="dash-stat-num">${total}</div><div class="dash-stat-label">Total leads</div><div class="dash-stat-sub">${active} active</div></div>
+      <div class="dash-stat" onclick="goToList('closed')"><div class="dash-stat-num" style="color:#86efac">${closed}</div><div class="dash-stat-label">Closed</div></div>
+      <div class="dash-stat" onclick="showView('list');setFilter('overdue');listDateStart='';listDateEnd=''"><div class="dash-stat-num" style="color:${overdue>0?"#fca5a5":"#fff"}">${overdue}</div><div class="dash-stat-label">Overdue</div></div>
     </div>
 
     <!-- FOLLOW-UPS -->
@@ -812,7 +814,7 @@ function renderDashboard() {
     <!-- REPS -->
     ${repStats.length>0?`<div style="margin-bottom:1.5rem">
       <p class="section-label" style="margin-bottom:10px">Reps</p>
-      <div class="rep-grid">${repStats.map(r=>`<div class="rep-card" onclick="showView('list');setRepFilter('${r.name}')">
+      <div class="rep-grid">${repStats.map(r=>`<div class="rep-card" onclick="goToList('all','${r.name}')">
         <div class="rep-card-name"><span class="rep-avatar">${repInitials(r.name)}</span>${r.name}</div>
         <div class="rep-stat"><span>Leads</span><span>${r.total}</span></div>
         <div class="rep-stat"><span>Closed</span><span>${r.closed}</span></div>
@@ -874,18 +876,33 @@ function setDashRange(r) { dashRange=r; if(r!=="custom"){dashCustomStart="";dash
 
 // ---- LIST ----
 function renderList() {
+  // Date range banner
+  const rangeLabels = {week:"This week",month:"This month",year:"This year",custom:"Custom range"};
+  const rangeBanner = (listDateStart && dashRange!=="all") ? `
+    <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:rgba(192,96,255,0.12);border:0.5px solid var(--accent);border-radius:var(--radius);margin-bottom:8px;font-size:12px;color:var(--accent-bright)">
+      <span>🗓 ${rangeLabels[dashRange]||"Date range"}: ${fmtDate(listDateStart)} → ${fmtDate(listDateEnd||today())}</span>
+      <button onclick="listDateStart='';listDateEnd='';renderList()" style="margin-left:auto;font-family:'DM Sans',sans-serif;font-size:11px;background:transparent;border:none;color:var(--text3);cursor:pointer">✕ Clear</button>
+    </div>` : "";
+  document.getElementById("list-range-banner").innerHTML = rangeBanner;
+
   const counts={all:leads.length}; STATUSES.forEach(s=>counts[s]=leads.filter(l=>l.status===s).length);
   counts["has_invoices"]=leads.filter(l=>(l.invoices||[]).length>0).length;
   const pills=[{k:"all",l:"All"},...STATUSES.map(s=>({k:s,l:STATUS_CFG[s].label})),{k:"overdue",l:"⚠ Overdue"},{k:"has_invoices",l:"💰 Invoiced"}];
   document.getElementById("filter-pills").innerHTML=pills.map(p=>`<button class="fpill${filterStatus===p.k?" on":""}" onclick="setFilter('${p.k}')">${p.l}${p.k!=="overdue"?" ("+(counts[p.k]||0)+")":""}</button>`).join("");
   renderRepPills();
   const sortKey=document.getElementById("sort-select")?.value||"followup";
-  // If a stage filter is selected via sort dropdown, override filterStatus
   const stageFilter = sortKey.startsWith("filter_") ? sortKey.replace("filter_","") : null;
   let fil=leads.filter(l=>{
     const ms=!searchQ||[l.firstName,l.lastName,l.company,l.email,l.vertical,l.rep].some(f=>f?.toLowerCase().includes(searchQ));
     if(!ms) return false;
     if(filterRep&&l.rep!==filterRep) return false;
+    // Apply date range if set
+    if(listDateStart) {
+      const d = l.lead_date||l.dateAdded||"";
+      if(!d) return false;
+      const ts=parseDate(d);
+      if(ts<parseDate(listDateStart)||ts>parseDate((listDateEnd||today())+"T23:59:59")) return false;
+    }
     if(stageFilter) return l.status===stageFilter;
     if(filterStatus==="all") return true;
     if(filterStatus==="overdue") return l.followup&&parseDate(l.followup)<parseDate(today())&&l.status!=="dead";
@@ -970,7 +987,18 @@ function renderList() {
     </tr>`;
   }).join("");
 }
-function setFilter(s){filterStatus=s;renderList();}
+function setFilter(s){filterStatus=s;listDateStart="";listDateEnd="";renderList();}
+function goToList(filter, rep) {
+  // Carry current dashboard date range into list view
+  if (dashRange==="all") { listDateStart=""; listDateEnd=""; }
+  else if (dashRange==="week") { const d=new Date(); d.setDate(d.getDate()-d.getDay()); listDateStart=d.toISOString().slice(0,10); listDateEnd=weekEnd(); }
+  else if (dashRange==="month") { const t=today(); listDateStart=t.slice(0,7)+"-01"; listDateEnd=t; }
+  else if (dashRange==="year") { listDateStart=today().slice(0,4)+"-01-01"; listDateEnd=today(); }
+  else if (dashRange==="custom") { listDateStart=dashCustomStart; listDateEnd=dashCustomEnd||today(); }
+  filterRep = rep||"";
+  filterStatus = filter||"all";
+  showView("list");
+}
 function toggleSort(key) {
   sortDir[key] = sortDir[key]==="asc" ? "desc" : "asc";
   const keyMap = {lead_date:"lead_date",last_contact:"last_contact",company:"company",name:"name",rep:"rep",status:"status",vertical:"vertical"};
