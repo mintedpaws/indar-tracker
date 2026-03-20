@@ -9,9 +9,9 @@
 <style>
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
 :root {
-  --bg:#f0ecf8; --bg2:#2a1655; --bg3:#3d2280; --bg4:#5530aa;
-  --border:rgba(160,120,220,0.25); --border2:rgba(140,90,210,0.45);
-  --text:#ffffff; --text2:#ffffff; --text3:#cdb8f0;
+  --bg:#120830; --bg2:#1e1048; --bg3:#2d1870; --bg4:#3f22a0;
+  --border:rgba(180,140,255,0.2); --border2:rgba(180,140,255,0.45);
+  --text:#f0e8ff; --text2:#e0d0ff; --text3:#9b7fd4;
   --accent:#c060ff; --accent-bright:#e090ff; --accent-dim:rgba(192,96,255,0.30);
   --accent-hover:#d070ff;
   --new-bg:rgba(99,102,241,0.2); --new-cl:#a5b4fc;
@@ -48,7 +48,7 @@ select option{background:#3c2268;color:#fff}
 .btn-sm{font-size:11px;padding:4px 10px}
 .btn:disabled{opacity:.35;cursor:not-allowed}
 
-#login-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;background:#1a0d35;background-image:radial-gradient(ellipse at 30% 40%,rgba(192,96,255,0.35) 0%,transparent 60%),radial-gradient(ellipse at 75% 70%,rgba(99,102,241,0.2) 0%,transparent 50%)}
+#login-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--bg);background-image:radial-gradient(ellipse at 30% 40%,rgba(192,96,255,0.35) 0%,transparent 60%),radial-gradient(ellipse at 75% 70%,rgba(99,102,241,0.2) 0%,transparent 50%)}
 .login-card{width:100%;max-width:380px;padding:2.5rem;background:var(--bg2);border:0.5px solid var(--border2);border-radius:var(--radius-xl);box-shadow:var(--shadow-lg);animation:fadeUp .4s ease}
 .login-logo{margin-bottom:2rem}
 .login-logo .brand{font-size:11px;font-weight:500;color:var(--text3);letter-spacing:.12em;text-transform:uppercase;margin-bottom:6px}
@@ -63,7 +63,7 @@ select option{background:#3c2268;color:#fff}
 
 #app{display:none;height:100vh;flex-direction:column}
 #app.on{display:flex}
-.topbar{height:56px;background:#2a1655;border-bottom:1px solid var(--border2);display:flex;align-items:center;padding:0 1.5rem;gap:1rem;flex-shrink:0;z-index:10;position:relative}
+.topbar{height:56px;background:#180c40;border-bottom:1px solid var(--border2);display:flex;align-items:center;padding:0 1.5rem;gap:1rem;flex-shrink:0;z-index:10;position:relative}
 .topbar-brand{font-size:15px;font-weight:700;color:#fff;display:flex;align-items:center;gap:10px;letter-spacing:-.3px}
 .topbar-brand .frog{font-size:20px}
 .topbar-nav{display:flex;gap:2px;margin-left:1.5rem}
@@ -130,7 +130,7 @@ select option{background:#3c2268;color:#fff}
 .table-wrap{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:auto;flex:1}
 table{width:100%;border-collapse:collapse;min-width:920px}
 th{padding:10px 14px;text-align:left;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.09em;background:var(--bg3);border-bottom:1px solid var(--border2);white-space:nowrap;user-select:none;position:sticky;top:0;z-index:2}
-td{padding:13px 14px;font-size:13px;font-weight:500;color:var(--text2);border-bottom:0.5px solid var(--border);transition:background .1s}
+td{padding:13px 14px;font-size:13px;font-weight:500;color:#d4b8ff;border-bottom:0.5px solid var(--border);transition:background .1s}
 tr:last-child td{border-bottom:none}
 tr:nth-child(even) td{background:rgba(255,255,255,0.02)}
 tr:hover td{background:rgba(192,96,255,0.07)!important}
@@ -219,7 +219,7 @@ tr:hover td{background:rgba(192,96,255,0.07)!important}
   html,body{overflow-x:hidden;width:100%}
 
   /* Topbar: brand + right icons on one line, nav below as pill strip */
-  .topbar{height:auto;flex-wrap:wrap;padding:.5rem .75rem;gap:.35rem;position:sticky;top:0;z-index:50;background:#2a1655}
+  .topbar{height:auto;flex-wrap:wrap;padding:.5rem .75rem;gap:.35rem;position:sticky;top:0;z-index:50;background:#180c40}
   .topbar-brand{font-size:14px;order:1}
   .topbar-right{order:2;margin-left:auto;gap:8px}
   .search-wrap{display:none}
