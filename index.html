@@ -964,9 +964,10 @@ function renderFollowUp() {
 
       <!-- Indar questions if any -->
       ${indarQs.length?`<div style="padding:10px 14px;border-bottom:0.5px solid var(--border);background:rgba(252,211,77,0.06)">
-        ${indarQs.map(q=>`<div style="display:flex;gap:8px;align-items:baseline;margin-bottom:4px">
+        ${indarQs.map((q,qi)=>`<div style="display:flex;gap:8px;align-items:baseline;margin-bottom:4px">
           <span style="font-size:12px;font-weight:800;color:#fcd34d;white-space:nowrap">Question From Indar:</span>
-          <span style="font-size:13px;color:#fef08a">${q.text.replace("❓ Question from Indar: ","")}</span>
+          <span style="font-size:13px;color:#fef08a;flex:1">${q.text.replace("❓ Question from Indar: ","")}</span>
+          <button onclick="deleteIndarNote('${l.id}',${qi})" style="font-family:'DM Sans',sans-serif;font-size:10px;padding:2px 7px;border-radius:4px;border:0.5px solid rgba(239,68,68,0.3);background:rgba(239,68,68,0.08);color:#fca5a5;cursor:pointer;flex-shrink:0">✕ Delete</button>
         </div>`).join("")}
       </div>`:""}
 
@@ -976,7 +977,7 @@ function renderFollowUp() {
           onkeydown="if(event.key==='Enter')markFollowUpDone('${l.id}')">
         <input id="fu-indar-${l.id}" placeholder="Question From Indar..." style="flex:1;font-size:12px;padding:6px 10px;background:rgba(252,211,77,0.07);border:0.5px solid rgba(252,211,77,0.25);border-radius:6px;color:#fcd34d"
           onkeydown="if(event.key==='Enter')saveIndarNote('${l.id}')">
-        <button onclick="saveIndarNote('${l.id}')" style="font-family:'DM Sans',sans-serif;font-size:11px;padding:5px 10px;border-radius:6px;border:0.5px solid rgba(252,211,77,0.35);background:rgba(252,211,77,0.08);color:#fcd34d;cursor:pointer">Send</button>
+        <button onclick="saveIndarNote('${l.id}')" style="font-family:'DM Sans',sans-serif;font-size:11px;padding:5px 10px;border-radius:6px;border:0.5px solid rgba(252,211,77,0.35);background:rgba(252,211,77,0.08);color:#fcd34d;cursor:pointer">Post</button>
         <button onclick="markFollowUpDone('${l.id}')" style="font-family:'DM Sans',sans-serif;font-size:12px;font-weight:700;padding:7px 16px;border-radius:8px;border:1.5px solid rgba(134,239,172,0.4);background:rgba(34,197,94,0.1);color:#86efac;cursor:pointer;white-space:nowrap">✓ Done</button>
         <button onclick="toggleFlag('${l.id}')" style="font-family:'DM Sans',sans-serif;font-size:11px;padding:5px 8px;border-radius:6px;border:0.5px solid var(--border2);background:transparent;color:var(--text3);cursor:pointer">✕</button>
       </div>
@@ -1002,6 +1003,16 @@ function renderFollowUp() {
 
     ${filtered.map(leadRow).join("")}`;
 }
+async function deleteIndarNote(id, index) {
+  const lead=leads.find(l=>l.id===id); if(!lead) return;
+  const indarQs=lead.activity.filter(a=>a.text&&a.text.startsWith("❓ Question from Indar:"));
+  const toDelete=indarQs[index];
+  if(!toDelete) return;
+  lead.activity=lead.activity.filter(a=>a.id!==toDelete.id);
+  await dbSaveLead(lead);
+  render();
+}
+
 async function saveIndarNote(id) {
   const lead=leads.find(l=>l.id===id); if(!lead) return;
   const inp=document.getElementById("fu-indar-"+id);
