@@ -1388,7 +1388,7 @@ async function addLead() {
     status:document.getElementById("f-status").value,
     rep:document.getElementById("f-rep").value,
     followup:document.getElementById("f-followup").value,
-    value:document.getElementById("f-value").value,
+    value:"",
     lead_date:document.getElementById("f-lead_date").value,
     last_contact_date:document.getElementById("f-last_contact_date").value,
     closed_date:document.getElementById("f-closed_date").value,
@@ -1398,7 +1398,7 @@ async function addLead() {
   await dbSaveLead(lead); leads.unshift(lead);
   render(); closeAddModal();
   btn.disabled=false; btn.textContent="Save lead";
-  ["firstName","lastName","email","phone","company","title","notes","value"].forEach(f=>{const el=document.getElementById("f-"+f);if(el)el.value="";});
+  ["firstName","lastName","email","phone","company","title","notes"].forEach(f=>{const el=document.getElementById("f-"+f);if(el)el.value="";});
   ["f-vertical","f-rep"].forEach(id=>{const el=document.getElementById(id);if(el)el.value="";});
   document.getElementById("f-status").value="new";
   ["f-followup","f-lead_date","f-last_contact_date","f-closed_date"].forEach(id=>{const el=document.getElementById(id);if(el)el.value="";});
