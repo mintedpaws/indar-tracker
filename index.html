@@ -919,93 +919,89 @@ async function toggleFlag(id) {
 }
 
 // ---- REP FOLLOW UP ----
+let fuRepFilter = "";
+
 function renderFollowUp() {
   const el = document.getElementById("followup-content");
   const flagged = leads.filter(l=>l.flagged);
-  const byRep = {};
-  reps.forEach(r=>{ byRep[r]=flagged.filter(l=>l.rep===r); });
-  const unassigned = flagged.filter(l=>!l.rep||!reps.includes(l.rep));
   const total = flagged.length;
+
+  // Rep filter pills
+  const repPills = `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:1.25rem">
+    <button onclick="fuRepFilter=\'\';renderFollowUp()" style="font-family:'DM Sans',sans-serif;font-size:12px;padding:5px 14px;border-radius:20px;border:0.5px solid ${!fuRepFilter?'var(--accent-bright)':' var(--border2)'};background:${!fuRepFilter?'var(--accent-dim)':' transparent'};color:${!fuRepFilter?'#fff':'var(--text3)'};cursor:pointer;font-weight:600">All (${total})</button>
+    ${reps.map(r=>{const c=repColor(r);const n=flagged.filter(l=>l.rep===r).length;return `<button onclick="fuRepFilter='${r}';renderFollowUp()" style="font-family:'DM Sans',sans-serif;font-size:12px;padding:5px 14px;border-radius:20px;border:0.5px solid ${fuRepFilter===r?c.border:'var(--border2)'};background:${fuRepFilter===r?c.bg:'transparent'};color:${fuRepFilter===r?c.text:'var(--text3)'};cursor:pointer;font-weight:600">${r} (${n})</button>`;}).join("")}
+  </div>`;
+
+  const filtered = fuRepFilter ? flagged.filter(l=>l.rep===fuRepFilter) : flagged;
 
   function leadRow(l) {
     const sc=STATUS_CFG[l.status]||STATUS_CFG.new;
     const lastNote=(l.activity||[]).filter(a=>(a.type==="note"||a.type==="contact")&&!a.text.startsWith("❓")).slice(-1)[0];
-    const indarQuestions=(l.activity||[]).filter(a=>a.text&&a.text.startsWith("❓ Question from Indar:"));
+    const indarQs=(l.activity||[]).filter(a=>a.text&&a.text.startsWith("❓ Question from Indar:"));
     const fc=l.followup?fcClass(l.followup):"";
-    return `<div id="furow-${l.id}" style="padding:14px 16px;border-bottom:0.5px solid var(--border)">
-      <div style="display:flex;align-items:flex-start;gap:12px">
+    const c=repColor(l.rep||"");
+    return `<div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);margin-bottom:10px;overflow:hidden">
+      <!-- Header row -->
+      <div style="display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:0.5px solid var(--border);cursor:pointer" onclick="openLead('${l.id}')">
         <div style="flex:1;min-width:0">
-          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px;cursor:pointer" onclick="openLead('${l.id}')">
-            <span style="font-size:14px;font-weight:700;color:var(--text)">${l.company||""}</span>
-            ${l.firstName||l.lastName?`<span style="font-size:12px;color:var(--text3)">${l.firstName||""} ${l.lastName||""}</span>`:""}
-            <span class="sbadge" style="background:${sc.bg};color:${sc.cl};font-size:10px">${sc.label}</span>
-          </div>
-          <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:8px;font-size:12px;color:var(--text3)">
-            ${l.phone?`<span>📞 ${l.phone}</span>`:`<span>📞 —</span>`}
-            ${l.email?`<span>✉ ${l.email}</span>`:""}
-            ${l.vertical?`<span>🏷 ${l.vertical}</span>`:""}
-            ${l.followup?`<span style="color:${fc==="overdue"?"#fca5a5":fc==="due-soon"?"#fcd34d":"#86efac"};font-weight:600">📅 Follow-up: ${fmtDate(l.followup)}${fc==="overdue"?" ⚠":""}</span>`:`<span style="color:var(--text3)">📅 No follow-up set</span>`}
-            ${l.last_contact_date?`<span>Last contact: ${fmtDate(l.last_contact_date)}</span>`:""}
-          </div>
-          ${lastNote?`<div style="font-size:12px;color:var(--text3);background:var(--bg3);border-radius:6px;padding:6px 10px;margin-bottom:8px;border-left:2px solid var(--border2)">"${lastNote.text.slice(0,120)}${lastNote.text.length>120?"…":""}"</div>`:""}
-          ${indarQuestions.length?`<div style="margin-bottom:10px">${indarQuestions.map(q=>`<div style="display:flex;align-items:flex-start;gap:8px;background:rgba(252,211,77,0.12);border:1.5px solid rgba(252,211,77,0.4);border-radius:8px;padding:10px 14px;margin-bottom:6px"><span style="font-size:13px;font-weight:800;color:#fcd34d;white-space:nowrap;flex-shrink:0">Question From Indar:</span><span style="font-size:13px;color:#fef08a;flex:1;margin-left:8px">${q.text.replace("❓ Question from Indar: ","")}</span></div>`).join("")}</div>`:""}
-          <div style="display:flex;gap:6px;align-items:center;margin-bottom:6px">
-            <input id="fu-note-${l.id}" placeholder="Log a note before marking done..." style="flex:1;font-size:12px;padding:6px 10px;background:var(--bg3);border:0.5px solid var(--border2);border-radius:6px;color:var(--text)"
-              onkeydown="if(event.key==='Enter')markFollowUpDone('${l.id}')">
-          </div>
-          <div style="display:flex;gap:6px;align-items:center">
-            <span style="font-size:13px;font-weight:800;color:#fcd34d;white-space:nowrap;flex-shrink:0">Question From Indar:</span>
-            <input id="fu-indar-${l.id}" placeholder="Leave a question for the rep..." style="flex:1;font-size:12px;padding:6px 10px;background:rgba(252,211,77,0.08);border:0.5px solid rgba(252,211,77,0.3);border-radius:6px;color:#fcd34d"
-              onkeydown="if(event.key==='Enter')saveIndarNote('${l.id}')">
-            <button onclick="saveIndarNote('${l.id}')" style="font-family:'DM Sans',sans-serif;font-size:11px;padding:5px 10px;border-radius:6px;border:0.5px solid rgba(252,211,77,0.4);background:rgba(252,211,77,0.1);color:#fcd34d;cursor:pointer;white-space:nowrap">Send</button>
-          </div>
+          <span style="font-size:14px;font-weight:700;color:#fff">${l.company||""}</span>
+          ${l.firstName||l.lastName?`<span style="font-size:12px;color:var(--text3);margin-left:8px">${l.firstName||""} ${l.lastName||""}</span>`:""}
+          <span class="sbadge" style="background:${sc.bg};color:${sc.cl};font-size:10px;margin-left:8px">${sc.label}</span>
         </div>
-        <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0;align-items:flex-end">
-          <button onclick="markFollowUpDone('${l.id}')"
-            style="font-family:'DM Sans',sans-serif;font-size:12px;font-weight:700;padding:8px 18px;border-radius:8px;border:1.5px solid rgba(134,239,172,0.5);background:rgba(34,197,94,0.12);color:#86efac;cursor:pointer;white-space:nowrap;transition:all .15s"
-            onmouseover="this.style.background='rgba(34,197,94,0.22)'" onmouseout="this.style.background='rgba(34,197,94,0.12)'">✓ Done</button>
-          <button onclick="toggleFlag('${l.id}')"
-            style="font-family:'DM Sans',sans-serif;font-size:11px;padding:4px 10px;border-radius:6px;border:0.5px solid var(--border2);background:transparent;color:var(--text3);cursor:pointer">Remove</button>
+        <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
+          ${repAvatar(l.rep,20)}
+          <span style="font-size:12px;color:${c.text};font-weight:600">${l.rep||"—"}</span>
+          ${l.followup?`<span style="font-size:11px;font-family:'DM Mono',monospace;color:${fc==="overdue"?"#fca5a5":fc==="due-soon"?"#fcd34d":"var(--text3)"};padding:2px 8px;background:${fc==="overdue"?"rgba(239,68,68,0.1)":fc==="due-soon"?"rgba(252,211,77,0.1)":"transparent"};border-radius:4px">${fc==="overdue"?"⚠ ":""}${fmtDate(l.followup)}</span>`:""}
         </div>
+      </div>
+
+      <!-- Contact + last note row -->
+      <div style="padding:10px 14px;border-bottom:0.5px solid var(--border);display:flex;align-items:center;gap:16px;font-size:12px;color:var(--text3);flex-wrap:wrap">
+        ${l.phone&&l.phone!=="—"?`<span style="color:var(--text2)">📞 ${l.phone}</span>`:""}
+        ${l.email?`<span style="color:var(--text2)">✉ ${l.email}</span>`:""}
+        ${lastNote?`<span style="color:var(--text3);font-style:italic;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:400px">"${lastNote.text.slice(0,80)}${lastNote.text.length>80?"…":""}"</span>`:""}
+      </div>
+
+      <!-- Indar questions if any -->
+      ${indarQs.length?`<div style="padding:10px 14px;border-bottom:0.5px solid var(--border);background:rgba(252,211,77,0.06)">
+        ${indarQs.map(q=>`<div style="display:flex;gap:8px;align-items:baseline;margin-bottom:4px">
+          <span style="font-size:12px;font-weight:800;color:#fcd34d;white-space:nowrap">Question From Indar:</span>
+          <span style="font-size:13px;color:#fef08a">${q.text.replace("❓ Question from Indar: ","")}</span>
+        </div>`).join("")}
+      </div>`:""}
+
+      <!-- Actions row -->
+      <div style="display:flex;align-items:center;gap:8px;padding:10px 14px">
+        <input id="fu-note-${l.id}" placeholder="Add a note..." style="flex:1;font-size:12px;padding:6px 10px;background:var(--bg3);border:0.5px solid var(--border2);border-radius:6px;color:var(--text)"
+          onkeydown="if(event.key==='Enter')markFollowUpDone('${l.id}')">
+        <input id="fu-indar-${l.id}" placeholder="Question From Indar..." style="flex:1;font-size:12px;padding:6px 10px;background:rgba(252,211,77,0.07);border:0.5px solid rgba(252,211,77,0.25);border-radius:6px;color:#fcd34d"
+          onkeydown="if(event.key==='Enter')saveIndarNote('${l.id}')">
+        <button onclick="saveIndarNote('${l.id}')" style="font-family:'DM Sans',sans-serif;font-size:11px;padding:5px 10px;border-radius:6px;border:0.5px solid rgba(252,211,77,0.35);background:rgba(252,211,77,0.08);color:#fcd34d;cursor:pointer">Send</button>
+        <button onclick="markFollowUpDone('${l.id}')" style="font-family:'DM Sans',sans-serif;font-size:12px;font-weight:700;padding:7px 16px;border-radius:8px;border:1.5px solid rgba(134,239,172,0.4);background:rgba(34,197,94,0.1);color:#86efac;cursor:pointer;white-space:nowrap">✓ Done</button>
+        <button onclick="toggleFlag('${l.id}')" style="font-family:'DM Sans',sans-serif;font-size:11px;padding:5px 8px;border-radius:6px;border:0.5px solid var(--border2);background:transparent;color:var(--text3);cursor:pointer">✕</button>
       </div>
     </div>`;
   }
 
   el.innerHTML = `
-    <div class="dash-header" style="margin-bottom:1.25rem">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:8px">
       <div>
-        <h2>Rep Follow Up</h2>
-        <p style="font-size:12px;color:var(--text3);margin-top:4px">Flag leads from List View using 🔕 → they appear here for reps to action</p>
+        <h2 style="font-size:18px;font-weight:700;color:#fff;margin-bottom:4px">Rep Follow Up</h2>
+        <p style="font-size:12px;color:var(--text3)">Flag leads from List View 🔔 → they appear here</p>
       </div>
-      <span style="font-size:13px;font-weight:700;color:${total>0?'#fcd34d':'#86efac'}">${total} lead${total!==1?'s':''} pending</span>
+      <span style="font-size:13px;font-weight:700;color:${total>0?"#fcd34d":"#86efac"}">${total} lead${total!==1?"s":""} pending</span>
     </div>
 
-    ${total===0?`<div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:3rem;text-align:center">
-      <div style="font-size:32px;margin-bottom:12px">✅</div>
-      <p style="font-size:15px;font-weight:600;color:var(--text);margin-bottom:6px">All caught up!</p>
-      <p style="font-size:13px;color:var(--text3)">No leads flagged for follow up. Flag leads from List View using the 🔕 button.</p>
+    ${repPills}
+
+    ${filtered.length===0?`<div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:3rem;text-align:center">
+      <div style="font-size:32px;margin-bottom:12px">${total===0?"✅":"🔍"}</div>
+      <p style="font-size:15px;font-weight:600;color:#fff;margin-bottom:6px">${total===0?"All caught up!":"No leads for this rep"}</p>
+      <p style="font-size:13px;color:var(--text3)">${total===0?"Flag leads from List View using the 🔕 button.":"Switch rep filter above to see others."}</p>
     </div>`:""}
 
-    ${reps.map(rep=>{
-      const items=byRep[rep]||[];
-      if(!items.length) return "";
-      const c=repColor(rep);
-      return `<div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);margin-bottom:1rem;overflow:hidden">
-        <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;background:var(--bg3);border-bottom:1px solid var(--border2)">
-          ${repAvatar(rep,26)}
-          <span style="font-size:14px;font-weight:700;color:${c.text}">${rep}</span>
-          <span style="font-size:11px;color:var(--text3)">${items.length} lead${items.length!==1?'s':''} to action</span>
-          <button onclick="markAllDone('${rep}')" style="margin-left:auto;font-family:'DM Sans',sans-serif;font-size:11px;font-weight:600;padding:5px 12px;border-radius:6px;border:1px solid rgba(134,239,172,0.3);background:rgba(34,197,94,0.08);color:#86efac;cursor:pointer">✓ Mark all done</button>
-        </div>
-        ${items.map(leadRow).join("")}
-      </div>`;
-    }).join("")}
-    ${unassigned.length?`<div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);margin-bottom:1rem;overflow:hidden">
-      <div style="padding:12px 16px;background:var(--bg3);border-bottom:1px solid var(--border2);font-size:14px;font-weight:700;color:var(--text3)">Unassigned</div>
-      ${unassigned.map(leadRow).join("")}
-    </div>`:""}`;
+    ${filtered.map(leadRow).join("")}`;
 }
-
 async function saveIndarNote(id) {
   const lead=leads.find(l=>l.id===id); if(!lead) return;
   const inp=document.getElementById("fu-indar-"+id);
