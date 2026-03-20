@@ -9,9 +9,9 @@
 <style>
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
 :root {
-  --bg:#0d0d1a; --bg2:#161628; --bg3:#22224a; --bg4:#2e2e68;
-  --border:rgba(150,150,255,0.15); --border2:rgba(150,150,255,0.35);
-  --text:#ffffff; --text2:#e8e8ff; --text3:#8888bb;
+  --bg:#1c1f2e; --bg2:#252839; --bg3:#32374f; --bg4:#434966;
+  --border:rgba(180,185,220,0.12); --border2:rgba(180,185,220,0.28);
+  --text:#eef0ff; --text2:#c8cbdf; --text3:#7a7e9a;
   --accent:#c060ff; --accent-bright:#e090ff; --accent-dim:rgba(192,96,255,0.30);
   --accent-hover:#d070ff;
   --new-bg:rgba(99,102,241,0.2); --new-cl:#a5b4fc;
@@ -64,7 +64,7 @@ select option{background:#3c2268;color:#fff}
 
 #app{display:none;height:100vh;flex-direction:column}
 #app.on{display:flex}
-.topbar{height:56px;background:#111122;border-bottom:1px solid var(--border2);display:flex;align-items:center;padding:0 1.5rem;gap:1rem;flex-shrink:0;z-index:10;position:relative}
+.topbar{height:56px;background:#1a1d2e;border-bottom:1px solid var(--border2);display:flex;align-items:center;padding:0 1.5rem;gap:1rem;flex-shrink:0;z-index:10;position:relative}
 .topbar-brand{font-size:15px;font-weight:700;color:#fff;display:flex;align-items:center;gap:10px;letter-spacing:-.3px}
 .topbar-brand .frog{font-size:20px}
 .topbar-nav{display:flex;gap:2px;margin-left:1.5rem}
@@ -131,7 +131,7 @@ select option{background:#3c2268;color:#fff}
 .table-wrap{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:auto;flex:1}
 table{width:100%;border-collapse:collapse;min-width:920px}
 th{padding:10px 14px;text-align:left;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.09em;background:var(--bg3);border-bottom:1px solid var(--border2);white-space:nowrap;user-select:none;position:sticky;top:0;z-index:2}
-td{padding:13px 14px;font-size:13px;font-weight:500;color:#c8c8f0;border-bottom:0.5px solid var(--border);transition:background .1s}
+td{padding:13px 14px;font-size:13px;font-weight:500;color:#c8cbdf;border-bottom:0.5px solid var(--border);transition:background .1s}
 tr:last-child td{border-bottom:none}
 tr:nth-child(even) td{background:rgba(255,255,255,0.02)}
 tr:hover td{background:rgba(192,96,255,0.07)!important}
@@ -220,7 +220,7 @@ tr:hover td{background:rgba(192,96,255,0.07)!important}
   html,body{overflow-x:hidden;width:100%}
 
   /* Topbar: brand + right icons on one line, nav below as pill strip */
-  .topbar{height:auto;flex-wrap:wrap;padding:.5rem .75rem;gap:.35rem;position:sticky;top:0;z-index:50;background:#111122}
+  .topbar{height:auto;flex-wrap:wrap;padding:.5rem .75rem;gap:.35rem;position:sticky;top:0;z-index:50;background:#1a1d2e}
   .topbar-brand{font-size:14px;order:1}
   .topbar-right{order:2;margin-left:auto;gap:8px}
   .search-wrap{display:none}
@@ -505,7 +505,8 @@ function dbToLead(row) {
     lead_date:row.lead_date||"", closed_date:row.closed_date||"",
     last_contact_date:row.last_contact_date||"", deal_notes:row.deal_notes||"",
     estimates:Array.isArray(row.estimates)?row.estimates:[],
-    invoices:Array.isArray(row.invoices)?row.invoices:[]
+    invoices:Array.isArray(row.invoices)?row.invoices:[],
+    flagged:row.flagged||false
   };
 }
 function leadToDb(l) {
@@ -515,7 +516,8 @@ function leadToDb(l) {
     status:l.status, rep:l.rep, followup:l.followup, value:l.value,
     date_added:l.dateAdded, activity:l.activity, lead_date:l.lead_date||"",
     closed_date:l.closed_date||"", last_contact_date:l.last_contact_date||"",
-    deal_notes:l.deal_notes||"", estimates:l.estimates||[], invoices:l.invoices||[]
+    deal_notes:l.deal_notes||"", estimates:l.estimates||[], invoices:l.invoices||[],
+    flagged:l.flagged||false
   };
 }
 async function dbLoadAll() {
@@ -908,87 +910,96 @@ function renderDashboard() {
 
 function setDashRange(r) { dashRange=r; if(r!=="custom"){dashCustomStart="";dashCustomEnd="";} renderDashboard(); }
 
+async function toggleFlag(id) {
+  const lead=leads.find(l=>l.id===id); if(!lead) return;
+  lead.flagged=!lead.flagged;
+  await dbSaveLead(lead);
+  render();
+  showToast(lead.flagged?"🔔 Added to Rep Follow Up":"Removed from Rep Follow Up",false,lead.flagged);
+}
+
 // ---- REP FOLLOW UP ----
 function renderFollowUp() {
   const el = document.getElementById("followup-content");
-  const t = today();
-  // All active leads with a follow-up date set, sorted overdue first then by date
-  const activeLeads = leads.filter(l=>l.status!=="dead"&&l.status!=="closed"&&l.followup);
-  activeLeads.sort((a,b)=>parseDate(a.followup)-parseDate(b.followup));
-  const overdue = activeLeads.filter(l=>parseDate(l.followup)<parseDate(t));
-  const upcoming = activeLeads.filter(l=>parseDate(l.followup)>=parseDate(t));
-  // Leads without follow-up dates
-  const noDate = leads.filter(l=>l.status!=="dead"&&l.status!=="closed"&&!l.followup);
+  const flagged = leads.filter(l=>l.flagged);
+  const byRep = {};
+  reps.forEach(r=>{ byRep[r]=flagged.filter(l=>l.rep===r); });
+  const unassigned = flagged.filter(l=>!l.rep||!reps.includes(l.rep));
+  const total = flagged.length;
 
-  function repSection(title, color, items, emptyMsg) {
-    if(!items.length) return `<p style="font-size:12px;color:var(--text3);padding:8px 0 4px">${emptyMsg}</p>`;
-    return items.map(l=>{
-      const sc=STATUS_CFG[l.status]||STATUS_CFG.new;
-      const fc=fcClass(l.followup);
-      const c=repColor(l.rep||"");
-      return `<div style="display:flex;align-items:center;gap:12px;padding:12px 14px;border-bottom:0.5px solid var(--border);cursor:pointer;transition:background .1s;border-radius:var(--radius)" 
-        onclick="openLead('${l.id}')" onmouseover="this.style.background='rgba(255,255,255,0.04)'" onmouseout="this.style.background='transparent'">
-        <div style="flex:1;min-width:0">
-          <div style="font-size:13px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${l.company||""} <span style="font-weight:400;color:var(--text3);font-size:12px">${l.firstName||""} ${l.lastName||""}</span></div>
-          <div style="display:flex;align-items:center;gap:8px;margin-top:4px;flex-wrap:wrap">
-            <span class="sbadge" style="background:${sc.bg};color:${sc.cl};font-size:10px">${sc.label}</span>
-            ${l.vertical?`<span style="font-size:11px;color:var(--text3)">${l.vertical}</span>`:""}
-          </div>
+  function leadRow(l) {
+    const sc=STATUS_CFG[l.status]||STATUS_CFG.new;
+    const c=repColor(l.rep||"");
+    const lastNote=(l.activity||[]).filter(a=>a.type==="note"||a.type==="contact").slice(-1)[0];
+    return `<div style="display:flex;align-items:center;gap:12px;padding:13px 16px;border-bottom:0.5px solid var(--border);transition:background .1s" onmouseover="this.style.background='rgba(255,255,255,0.03)'" onmouseout="this.style.background='transparent'">
+      <div style="flex:1;min-width:0;cursor:pointer" onclick="openLead('${l.id}')">
+        <div style="font-size:13px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${l.company||""} <span style="font-size:12px;font-weight:400;color:var(--text3)">${l.firstName||""} ${l.lastName||""}</span></div>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:4px;flex-wrap:wrap">
+          <span class="sbadge" style="background:${sc.bg};color:${sc.cl};font-size:10px">${sc.label}</span>
+          ${l.followup?`<span style="font-size:11px;color:${fcClass(l.followup)==='overdue'?'#fca5a5':fcClass(l.followup)==='due-soon'?'#fcd34d':'var(--text3)'}">📅 ${fmtDate(l.followup)}</span>`:''}
+          ${lastNote?`<span style="font-size:11px;color:var(--text3);overflow:hidden;text-overflow:ellipsis;max-width:300px">"${lastNote.text.slice(0,60)}${lastNote.text.length>60?'…':''}"</span>`:''}
         </div>
-        <div style="text-align:right;flex-shrink:0">
-          ${l.followup?`<div style="font-size:12px;font-weight:700;color:${fc==="overdue"?"#fca5a5":fc==="due-soon"?"#fcd34d":"#86efac"};font-family:'DM Mono',monospace">${fmtDate(l.followup)}</div>
-          <div style="font-size:10px;color:${fc==="overdue"?"#fca5a5":"var(--text3)"};margin-top:2px">${fc==="overdue"?"⚠ Overdue":fc==="due-soon"?"Due soon":"Upcoming"}</div>`
-          :`<div style="font-size:11px;color:var(--text3)">No date set</div>`}
-          <div style="margin-top:4px">${repAvatar(l.rep,16)}</div>
-        </div>
-        <div onclick="event.stopPropagation();quickSetFollowUp('${l.id}')" title="Set follow-up" style="font-size:18px;cursor:pointer;opacity:.5;padding:4px;flex-shrink:0">📅</div>
-      </div>`;
-    }).join("");
+      </div>
+      <button onclick="markFollowUpDone('${l.id}')" style="font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;padding:7px 16px;border-radius:8px;border:1.5px solid rgba(134,239,172,0.4);background:rgba(34,197,94,0.1);color:#86efac;cursor:pointer;white-space:nowrap;transition:all .15s;flex-shrink:0"
+        onmouseover="this.style.background='rgba(34,197,94,0.2)'" onmouseout="this.style.background='rgba(34,197,94,0.1)'">✓ Done</button>
+    </div>`;
   }
 
   el.innerHTML = `
     <div class="dash-header" style="margin-bottom:1.25rem">
-      <h2>Rep Follow Up</h2>
-      <span style="font-size:12px;color:var(--text3)">${activeLeads.length} leads with dates · ${noDate.length} with no date set</span>
+      <div>
+        <h2>Rep Follow Up</h2>
+        <p style="font-size:12px;color:var(--text3);margin-top:4px">Flag leads from List View using 🔕 → they appear here for reps to action</p>
+      </div>
+      <span style="font-size:13px;font-weight:700;color:${total>0?'#fcd34d':'#86efac'}">${total} lead${total!==1?'s':''} pending</span>
     </div>
 
+    ${total===0?`<div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:3rem;text-align:center">
+      <div style="font-size:32px;margin-bottom:12px">✅</div>
+      <p style="font-size:15px;font-weight:600;color:var(--text);margin-bottom:6px">All caught up!</p>
+      <p style="font-size:13px;color:var(--text3)">No leads flagged for follow up. Flag leads from List View using the 🔕 button.</p>
+    </div>`:""}
+
     ${reps.map(rep=>{
-      const repLeads = leads.filter(l=>l.rep===rep&&l.status!=="dead"&&l.status!=="closed");
-      const repOverdue = repLeads.filter(l=>l.followup&&parseDate(l.followup)<parseDate(t)).sort((a,b)=>parseDate(a.followup)-parseDate(b.followup));
-      const repUpcoming = repLeads.filter(l=>l.followup&&parseDate(l.followup)>=parseDate(t)).sort((a,b)=>parseDate(a.followup)-parseDate(b.followup));
-      const repNoDate = repLeads.filter(l=>!l.followup);
+      const items=byRep[rep]||[];
+      if(!items.length) return "";
       const c=repColor(rep);
       return `<div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);margin-bottom:1rem;overflow:hidden">
-        <div style="display:flex;align-items:center;gap:12px;padding:14px 16px;border-bottom:1px solid var(--border2);background:var(--bg3)">
-          ${repAvatar(rep,28)}
-          <span style="font-size:15px;font-weight:700;color:${c.text}">${rep}</span>
-          <span style="font-size:11px;color:var(--text3);margin-left:4px">${repLeads.length} active leads</span>
-          ${repOverdue.length?`<span style="margin-left:auto;font-size:11px;font-weight:700;background:rgba(239,68,68,0.15);color:#fca5a5;padding:3px 10px;border-radius:20px">⚠ ${repOverdue.length} overdue</span>`:"<span style='margin-left:auto;font-size:11px;color:#86efac'>✓ All clear</span>"}
+        <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;background:var(--bg3);border-bottom:1px solid var(--border2)">
+          ${repAvatar(rep,26)}
+          <span style="font-size:14px;font-weight:700;color:${c.text}">${rep}</span>
+          <span style="font-size:11px;color:var(--text3)">${items.length} lead${items.length!==1?'s':''} to action</span>
+          <button onclick="markAllDone('${rep}')" style="margin-left:auto;font-family:'DM Sans',sans-serif;font-size:11px;font-weight:600;padding:5px 12px;border-radius:6px;border:1px solid rgba(134,239,172,0.3);background:rgba(34,197,94,0.08);color:#86efac;cursor:pointer">✓ Mark all done</button>
         </div>
-        ${repOverdue.length?`<div style="padding:0 4px;border-bottom:0.5px solid var(--border)">
-          <div style="font-size:10px;font-weight:700;color:#fca5a5;text-transform:uppercase;letter-spacing:.08em;padding:8px 10px 4px">Overdue</div>
-          ${repSection("overdue","#fca5a5",repOverdue,"")}
-        </div>`:""}
-        ${repUpcoming.length?`<div style="padding:0 4px;border-bottom:0.5px solid var(--border)">
-          <div style="font-size:10px;font-weight:700;color:#fcd34d;text-transform:uppercase;letter-spacing:.08em;padding:8px 10px 4px">Upcoming</div>
-          ${repSection("upcoming","#fcd34d",repUpcoming,"")}
-        </div>`:""}
-        ${repNoDate.length?`<div style="padding:0 4px">
-          <div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;padding:8px 10px 4px">No follow-up date (${repNoDate.length})</div>
-          ${repSection("none","var(--text3)",repNoDate.slice(0,5),"")}
-          ${repNoDate.length>5?`<div style="padding:8px 14px;font-size:11px;color:var(--text3)">+${repNoDate.length-5} more without dates</div>`:""}
-        </div>`:""}
-        ${!repOverdue.length&&!repUpcoming.length&&!repNoDate.length?`<p style="padding:1rem;font-size:12px;color:var(--text3)">No active leads.</p>`:""}
+        ${items.map(leadRow).join("")}
       </div>`;
-    }).join("")}`;
+    }).join("")}
+    ${unassigned.length?`<div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);margin-bottom:1rem;overflow:hidden">
+      <div style="padding:12px 16px;background:var(--bg3);border-bottom:1px solid var(--border2);font-size:14px;font-weight:700;color:var(--text3)">Unassigned</div>
+      ${unassigned.map(leadRow).join("")}
+    </div>`:""}`;
 }
 
-function quickSetFollowUp(id) {
+async function markFollowUpDone(id) {
   const lead=leads.find(l=>l.id===id); if(!lead) return;
-  const date=prompt("Set follow-up date (YYYY-MM-DD):",lead.followup||today());
-  if(date===null) return;
-  lead.followup=date;
-  dbSaveLead(lead).then(()=>{ render(); showToast("✓ Follow-up set",false,true); });
+  lead.flagged=false;
+  lead.last_contact_date=today();
+  addActivity(lead,"contact",`Follow-up completed on ${fmtDate(today())}`);
+  await dbSaveLead(lead);
+  render();
+  showToast("✓ Follow-up marked complete",false,true);
+}
+
+async function markAllDone(rep) {
+  const toMark=leads.filter(l=>l.flagged&&l.rep===rep);
+  for(const lead of toMark) {
+    lead.flagged=false;
+    lead.last_contact_date=today();
+    addActivity(lead,"contact",`Follow-up completed on ${fmtDate(today())}`);
+    await dbSaveLead(lead);
+  }
+  render();
+  showToast(`✓ ${toMark.length} follow-ups marked complete`,false,true);
 }
 
 // ---- LIST ----
@@ -1100,7 +1111,10 @@ function renderList() {
           </div>
         </div>
       </td>
-      <td style="text-align:right"><button class="btn btn-ghost btn-sm" onclick="openLead('${l.id}')">View</button></td>
+      <td style="text-align:right;white-space:nowrap">
+        <button onclick="event.stopPropagation();toggleFlag('${l.id}')" title="${l.flagged?'Remove from follow-up':'Add to rep follow-up'}" style="background:${l.flagged?'rgba(252,211,77,0.15)':'transparent'};border:0.5px solid ${l.flagged?'rgba(252,211,77,0.5)':'transparent'};border-radius:6px;padding:3px 7px;cursor:pointer;font-size:14px;margin-right:4px;transition:all .15s">${l.flagged?'🔔':'🔕'}</button>
+        <button class="btn btn-ghost btn-sm" onclick="openLead('${l.id}')">View</button>
+      </td>
     </tr>`;
   }).join("");
 }
