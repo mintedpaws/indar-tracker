@@ -328,6 +328,7 @@ tr:hover td{background:rgba(192,96,255,0.05)}
               <option value="status">Sort: Stage</option>
               <option value="name">Sort: Name</option>
               <option value="company">Sort: Company</option>
+              <option value="vertical">Sort: Vertical</option>
               <option value="rep">Sort: Rep</option>
               <option value="added">Sort: Date added</option>
               <optgroup label="─── Filter by stage ───">
@@ -343,9 +344,14 @@ tr:hover td{background:rgba(192,96,255,0.05)}
         <div class="table-wrap">
           <table>
             <thead><tr>
-              <th>Company</th><th>Name</th><th>Phone</th><th>Vertical</th><th>Rep</th><th>Stage</th>
-              <th onclick="toggleSort('lead_date')" style="cursor:pointer;user-select:none" id="th-lead_date">Lead date <span id="sort-arrow-lead_date" style="opacity:.5"></span></th>
-              <th onclick="toggleSort('last_contact')" style="cursor:pointer;user-select:none" id="th-last_contact">Last contact <span id="sort-arrow-last_contact" style="opacity:.5"></span></th>
+              <th onclick="toggleSort('company')" style="cursor:pointer;user-select:none">Company <span id="sort-arrow-company" style="opacity:.3">↕</span></th>
+              <th onclick="toggleSort('name')" style="cursor:pointer;user-select:none">Name <span id="sort-arrow-name" style="opacity:.3">↕</span></th>
+              <th>Phone</th>
+              <th onclick="toggleSort('vertical')" style="cursor:pointer;user-select:none">Vertical <span id="sort-arrow-vertical" style="opacity:.3">↕</span></th>
+              <th onclick="toggleSort('rep')" style="cursor:pointer;user-select:none">Rep <span id="sort-arrow-rep" style="opacity:.3">↕</span></th>
+              <th onclick="toggleSort('status')" style="cursor:pointer;user-select:none">Stage <span id="sort-arrow-status" style="opacity:.3">↕</span></th>
+              <th onclick="toggleSort('lead_date')" style="cursor:pointer;user-select:none" id="th-lead_date">Lead date <span id="sort-arrow-lead_date" style="opacity:.3">↕</span></th>
+              <th onclick="toggleSort('last_contact')" style="cursor:pointer;user-select:none" id="th-last_contact">Last contact <span id="sort-arrow-last_contact" style="opacity:.3">↕</span></th>
               <th>Last note</th><th></th>
             </tr></thead>
             <tbody id="tbody"></tbody>
@@ -893,24 +899,23 @@ function renderList() {
       const bTotal=(b.invoices||[]).reduce((s,i)=>s+(parseFloat(i.amount)||0),0);
       return bTotal-aTotal;
     }
-    if(sortKey==="name") return (a.firstName||"").localeCompare(b.firstName||"");
-    if(sortKey==="company") return (a.company||"").localeCompare(b.company||"");
-    if(sortKey==="status") return STATUSES.indexOf(a.status)-STATUSES.indexOf(b.status);
-    if(sortKey==="rep") return (a.rep||"zzz").localeCompare(b.rep||"zzz");
+    const dir = (k) => sortDir[k]==="asc" ? 1 : -1;
+    if(sortKey==="name") return dir("name")*(a.firstName||"").localeCompare(b.firstName||"");
+    if(sortKey==="company") return dir("company")*(a.company||"").localeCompare(b.company||"");
+    if(sortKey==="vertical") return dir("vertical")*(a.vertical||"").localeCompare(b.vertical||"");
+    if(sortKey==="status") return dir("status")*(STATUSES.indexOf(a.status)-STATUSES.indexOf(b.status));
+    if(sortKey==="rep") return dir("rep")*(a.rep||"zzz").localeCompare(b.rep||"zzz");
     if(sortKey==="added") return (b.dateAdded||"").localeCompare(a.dateAdded||"");
-    if(sortKey==="last_contact") return sortDir["last_contact"]==="asc"
-      ? parseDate(a.last_contact_date)-parseDate(b.last_contact_date)
-      : parseDate(b.last_contact_date)-parseDate(a.last_contact_date);
-    if(sortKey==="lead_date") return sortDir["lead_date"]==="asc"
-      ? parseDate(a.lead_date)-parseDate(b.lead_date)
-      : parseDate(b.lead_date)-parseDate(a.lead_date);
+    if(sortKey==="last_contact") return dir("last_contact")*(parseDate(a.last_contact_date)-parseDate(b.last_contact_date));
+    if(sortKey==="lead_date") return dir("lead_date")*(parseDate(a.lead_date)-parseDate(b.lead_date));
     return parseDate(a.followup)-parseDate(b.followup);
   });
-  // Update sort arrows
-  ["lead_date","last_contact"].forEach(k=>{
+  // Update all sort arrows
+  const allSortCols = ["company","name","vertical","rep","status","lead_date","last_contact"];
+  allSortCols.forEach(k=>{
     const el=document.getElementById("sort-arrow-"+k);
     if(!el) return;
-    if(sortKey===(k==="last_contact"?"last_contact":k)) {
+    if(sortKey===k) {
       el.textContent = sortDir[k]==="asc" ? "↑" : "↓";
       el.style.opacity="1";
     } else {
@@ -968,7 +973,9 @@ function renderList() {
 function setFilter(s){filterStatus=s;renderList();}
 function toggleSort(key) {
   sortDir[key] = sortDir[key]==="asc" ? "desc" : "asc";
-  document.getElementById("sort-select").value = key==="lead_date" ? "lead_date" : "last_contact";
+  const keyMap = {lead_date:"lead_date",last_contact:"last_contact",company:"company",name:"name",rep:"rep",status:"status",vertical:"vertical"};
+  const selectVal = keyMap[key]||key;
+  document.getElementById("sort-select").value = selectVal;
   renderList();
 }
 async function quickUpdateStatusFromList(id,value) {
