@@ -1026,6 +1026,8 @@ async function saveIndarNote(id) {
   showToast("✓ Question sent to "+lead.rep,false,true);
   render();
 }
+
+async function markFollowUpDone(id) {
   const lead=leads.find(l=>l.id===id); if(!lead) return;
   const noteEl=document.getElementById("fu-note-"+id);
   const noteText=noteEl?.value.trim();
