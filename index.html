@@ -130,9 +130,10 @@ select option{background:#3c2268;color:#fff}
 .table-wrap{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:auto;flex:1}
 table{width:100%;border-collapse:collapse;min-width:920px}
 th{padding:10px 14px;text-align:left;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.09em;background:var(--bg3);border-bottom:1px solid var(--border2);white-space:nowrap;user-select:none;position:sticky;top:0;z-index:2}
-td{padding:10px 14px;font-size:13px;font-weight:500;color:var(--text2);border-bottom:0.5px solid var(--border);transition:background .1s}
+td{padding:13px 14px;font-size:13px;font-weight:500;color:var(--text2);border-bottom:0.5px solid var(--border);transition:background .1s}
 tr:last-child td{border-bottom:none}
-tr:hover td{background:rgba(192,96,255,0.05)}
+tr:nth-child(even) td{background:rgba(255,255,255,0.02)}
+tr:hover td{background:rgba(192,96,255,0.07)!important}
 .td-name{font-weight:500;color:var(--text3);cursor:pointer}
 .td-name:hover{color:var(--accent-bright)}
 .td-company{color:#fff;font-weight:700;cursor:pointer}
@@ -631,6 +632,32 @@ function fmtDate(d) {
   return m+"/"+day+"/"+y.slice(2);
 }
 function fcClass(d) { if(!d) return ""; const diff=(parseDate(d)-new Date(today()).getTime())/86400000; if(diff<0) return "overdue"; if(diff<=3) return "due-soon"; return ""; }
+// Rep colors - distinct per rep name (consistent hash)
+const REP_PALETTE = [
+  {bg:"rgba(99,102,241,0.25)",border:"#818cf8",text:"#a5b4fc"},   // indigo
+  {bg:"rgba(236,72,153,0.2)", border:"#f472b6",text:"#f9a8d4"},   // pink
+  {bg:"rgba(16,185,129,0.2)", border:"#34d399",text:"#6ee7b7"},   // emerald
+  {bg:"rgba(245,158,11,0.2)", border:"#fbbf24",text:"#fcd34d"},   // amber
+  {bg:"rgba(239,68,68,0.2)",  border:"#f87171",text:"#fca5a5"},   // red
+  {bg:"rgba(14,165,233,0.2)", border:"#38bdf8",text:"#7dd3fc"},   // sky
+];
+function repColor(name) {
+  if(!name) return REP_PALETTE[0];
+  let h=0; for(let i=0;i<name.length;i++) h=(h*31+name.charCodeAt(i))%REP_PALETTE.length;
+  return REP_PALETTE[h];
+}
+function repBadge(name, size=18) {
+  if(!name) return '<span style="color:var(--text3);font-size:11px">—</span>';
+  const c=repColor(name);
+  return `<span style="display:inline-flex;align-items:center;gap:6px">
+    <span style="width:${size}px;height:${size}px;border-radius:50%;background:${c.bg};border:1.5px solid ${c.border};display:inline-flex;align-items:center;justify-content:center;font-size:${Math.round(size*0.55)}px;font-weight:700;color:${c.text};flex-shrink:0">${repInitials(name)}</span>
+    <span style="font-size:12px;color:${c.text};font-weight:600">${name}</span>
+  </span>`;
+}
+function repAvatar(name, size=22) {
+  const c=repColor(name||"");
+  return `<span style="width:${size}px;height:${size}px;border-radius:50%;background:${c.bg};border:1.5px solid ${c.border};display:inline-flex;align-items:center;justify-content:center;font-size:${Math.round(size*0.5)}px;font-weight:700;color:${c.text}">${repInitials(name)}</span>`;
+}
 function repInitials(name) { if(!name) return "?"; return name.split(" ").map(w=>w[0]).join("").toUpperCase().slice(0,2); }
 function showToast(msg,isError,isSuccess) {
   const t = document.createElement("div");
@@ -653,14 +680,14 @@ function renderRepPills() {
   const counts = {};
   reps.forEach(r=>{ counts[r]=leads.filter(l=>l.rep===r).length; });
   c.innerHTML = `<span style="font-size:11px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:.07em">My leads:</span>`
-    +reps.map(r=>`<button class="rep-pill${filterRep===r?" on":""}" onclick="setRepFilter('${r}')"><span style="width:16px;height:16px;border-radius:50%;background:var(--accent-dim);border:1px solid var(--accent);display:inline-flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:var(--accent-bright)">${repInitials(r)}</span>${r} <span style="opacity:.7">(${counts[r]||0})</span></button>`).join("")
+    +reps.map(r=>`<button class="rep-pill${filterRep===r?" on":""}" onclick="setRepFilter('${r}')">${repAvatar(r,16)}${r} <span style="opacity:.7">(${counts[r]||0})</span></button>`).join("")
     +(filterRep?`<button class="rep-pill" onclick="setRepFilter('')" style="color:#fca5a5;border-color:rgba(239,68,68,.3)">✕ Clear</button>`:"");
 }
 function renderKanbanRepPills() {
   const c = document.getElementById("kanban-rep-pills"); if(!c) return;
   if (!reps.length) { c.innerHTML='<span style="font-size:11px;color:var(--text3)">All reps</span>'; return; }
   c.innerHTML = `<button class="rep-pill${!filterRep?" on":""}" onclick="setRepFilterKanban('')">All</button>`
-    +reps.map(r=>`<button class="rep-pill${filterRep===r?" on":""}" onclick="setRepFilterKanban('${r}')"><span style="width:16px;height:16px;border-radius:50%;background:var(--accent-dim);border:1px solid var(--accent);display:inline-flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:var(--accent-bright)">${repInitials(r)}</span>${r}</button>`).join("");
+    +reps.map(r=>`<button class="rep-pill${filterRep===r?" on":""}" onclick="setRepFilterKanban('${r}')">${repAvatar(r,16)}${r}</button>`).join("");
 }
 function setRepFilter(r) { filterRep=r; renderRepPills(); renderList(); }
 function setRepFilterKanban(r) { filterRep=r; renderKanbanRepPills(); renderKanban(); }
@@ -815,7 +842,7 @@ function renderDashboard() {
     ${repStats.length>0?`<div style="margin-bottom:1.5rem">
       <p class="section-label" style="margin-bottom:10px">Reps</p>
       <div class="rep-grid">${repStats.map(r=>`<div class="rep-card" onclick="goToList('all','${r.name}')">
-        <div class="rep-card-name"><span class="rep-avatar">${repInitials(r.name)}</span>${r.name}</div>
+        <div class="rep-card-name">${repAvatar(r.name,22)}<span style="color:${repColor(r.name).text}">${r.name}</span></div>
         <div class="rep-stat"><span>Leads</span><span>${r.total}</span></div>
         <div class="rep-stat"><span>Closed</span><span>${r.closed}</span></div>
         <div class="rep-stat"><span>Invoiced</span><span style="color:#86efac">$${r.ltv.toLocaleString()}</span></div>
@@ -961,7 +988,7 @@ function renderList() {
           ${["Portable Sanitation","Equipment Rental","Waste Management / Dumpster Rental","Construction","Propane / Oil","C-Store / Car Wash","Other"].map(v=>`<option value="${v}"${l.vertical===v?" selected":""}>${v}</option>`).join("")}
         </select>
       </td>
-      <td>${l.rep?`<span style="display:inline-flex;align-items:center;gap:5px"><span style="width:18px;height:18px;border-radius:50%;background:var(--accent-dim);border:1px solid var(--accent);display:inline-flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:var(--accent-bright)">${repInitials(l.rep)}</span><span style="font-size:12px">${l.rep}</span></span>`:'<span style="color:var(--text3);font-size:11px">—</span>'}</td>
+      <td>${repBadge(l.rep)}</td>
       <td><select class="stage-select" style="background:${sc.bg};color:${sc.cl}" onchange="quickUpdateStatusFromList('${l.id}',this.value)" onclick="event.stopPropagation()">${statusOpts}</select></td>
       <td style="font-size:12px;color:${l.lead_date?"var(--text2)":"var(--text3)"}"> ${l.lead_date?fmtDate(l.lead_date):"—"}</td>
       <td onclick="event.stopPropagation()" style="min-width:120px">
@@ -1057,7 +1084,7 @@ function renderKanban() {
           <div class="kcard-name">${l.firstName||""} ${l.lastName||""}</div>
           <div class="kcard-company">${l.company||""}</div>
           <div class="kcard-meta">
-            ${l.rep?`<span class="kcard-rep">${l.rep}</span>`:'<span style="font-size:10px;color:var(--text3)">Unassigned</span>'}
+            ${l.rep?`<span style="font-size:10px;background:${repColor(l.rep).bg};color:${repColor(l.rep).text};border:0.5px solid ${repColor(l.rep).border};padding:2px 7px;border-radius:6px;font-family:'DM Mono',monospace">${l.rep}</span>`:'<span style="font-size:10px;color:var(--text3)">Unassigned</span>'}
             <span class="kcard-followup ${fc}">${l.followup?fmtDate(l.followup):"no date"}</span>
           </div>
           ${lastNote?`<div class="kcard-note">${lastNote.text}</div>`:""}
@@ -1095,7 +1122,7 @@ function openLead(id) {
       <h2>${l.firstName||""} ${l.lastName||""} <span style="color:var(--text3);font-weight:400">at ${l.company||""}</span></h2>
       <div style="display:flex;align-items:center;gap:8px;margin-top:6px;flex-wrap:wrap">
         <span class="sbadge" style="background:${sc.bg};color:${sc.cl}">${sc.label}</span>
-        ${l.rep?`<span style="font-size:11px;color:var(--accent-bright);font-weight:500">→ ${l.rep}</span>`:""}
+        ${l.rep?`<span style="font-size:11px;font-weight:600;color:${repColor(l.rep).text}">→ ${l.rep}</span>`:""}
         ${l.vertical?`<span style="font-size:11px;font-family:'DM Mono',monospace;color:var(--text3)">${l.vertical}</span>`:""}
       </div>
     </div>
