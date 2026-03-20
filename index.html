@@ -929,47 +929,37 @@ function renderFollowUp() {
 
   function leadRow(l) {
     const sc=STATUS_CFG[l.status]||STATUS_CFG.new;
-    const lastNote=(l.activity||[]).filter(a=>a.type==="note"||a.type==="contact").slice(-1)[0];
+    const lastNote=(l.activity||[]).filter(a=>(a.type==="note"||a.type==="contact")&&!a.text.startsWith("❓")).slice(-1)[0];
+    const indarQuestions=(l.activity||[]).filter(a=>a.text&&a.text.startsWith("❓ Question from Indar:"));
     const fc=l.followup?fcClass(l.followup):"";
     return `<div id="furow-${l.id}" style="padding:14px 16px;border-bottom:0.5px solid var(--border)">
       <div style="display:flex;align-items:flex-start;gap:12px">
         <div style="flex:1;min-width:0">
-
-          <!-- Row 1: Company + name + stage -->
           <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px;cursor:pointer" onclick="openLead('${l.id}')">
             <span style="font-size:14px;font-weight:700;color:var(--text)">${l.company||""}</span>
             ${l.firstName||l.lastName?`<span style="font-size:12px;color:var(--text3)">${l.firstName||""} ${l.lastName||""}</span>`:""}
             <span class="sbadge" style="background:${sc.bg};color:${sc.cl};font-size:10px">${sc.label}</span>
           </div>
-
-          <!-- Row 2: Details -->
           <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:8px;font-size:12px;color:var(--text3)">
             ${l.phone?`<span>📞 ${l.phone}</span>`:`<span>📞 —</span>`}
-            ${l.email?`<span>✉ ${l.email}</span>`:``}
+            ${l.email?`<span>✉ ${l.email}</span>`:""}
             ${l.vertical?`<span>🏷 ${l.vertical}</span>`:""}
             ${l.followup?`<span style="color:${fc==="overdue"?"#fca5a5":fc==="due-soon"?"#fcd34d":"#86efac"};font-weight:600">📅 Follow-up: ${fmtDate(l.followup)}${fc==="overdue"?" ⚠":""}</span>`:`<span style="color:var(--text3)">📅 No follow-up set</span>`}
             ${l.last_contact_date?`<span>Last contact: ${fmtDate(l.last_contact_date)}</span>`:""}
           </div>
-
-          <!-- Row 3: Last note -->
           ${lastNote?`<div style="font-size:12px;color:var(--text3);background:var(--bg3);border-radius:6px;padding:6px 10px;margin-bottom:8px;border-left:2px solid var(--border2)">"${lastNote.text.slice(0,120)}${lastNote.text.length>120?"…":""}"</div>`:""}
-
-          <!-- Inline note -->
+          ${indarQuestions.length?`<div style="margin-bottom:10px">${indarQuestions.map(q=>`<div style="display:flex;align-items:flex-start;gap:8px;background:rgba(252,211,77,0.12);border:1.5px solid rgba(252,211,77,0.4);border-radius:8px;padding:10px 14px;margin-bottom:6px"><span style="font-size:13px;font-weight:800;color:#fcd34d;white-space:nowrap;flex-shrink:0">Question From Indar:</span><span style="font-size:13px;color:#fef08a;flex:1;margin-left:8px">${q.text.replace("❓ Question from Indar: ","")}</span></div>`).join("")}</div>`:""}
           <div style="display:flex;gap:6px;align-items:center;margin-bottom:6px">
             <input id="fu-note-${l.id}" placeholder="Log a note before marking done..." style="flex:1;font-size:12px;padding:6px 10px;background:var(--bg3);border:0.5px solid var(--border2);border-radius:6px;color:var(--text)"
               onkeydown="if(event.key==='Enter')markFollowUpDone('${l.id}')">
           </div>
-
-          <!-- Question from Indar -->
           <div style="display:flex;gap:6px;align-items:center">
-            <span style="font-size:13px;font-weight:800;color:#fcd34d;white-space:nowrap;flex-shrink:0;letter-spacing:.01em">Question From Indar:</span>
+            <span style="font-size:13px;font-weight:800;color:#fcd34d;white-space:nowrap;flex-shrink:0">Question From Indar:</span>
             <input id="fu-indar-${l.id}" placeholder="Leave a question for the rep..." style="flex:1;font-size:12px;padding:6px 10px;background:rgba(252,211,77,0.08);border:0.5px solid rgba(252,211,77,0.3);border-radius:6px;color:#fcd34d"
               onkeydown="if(event.key==='Enter')saveIndarNote('${l.id}')">
             <button onclick="saveIndarNote('${l.id}')" style="font-family:'DM Sans',sans-serif;font-size:11px;padding:5px 10px;border-radius:6px;border:0.5px solid rgba(252,211,77,0.4);background:rgba(252,211,77,0.1);color:#fcd34d;cursor:pointer;white-space:nowrap">Send</button>
           </div>
         </div>
-
-        <!-- Right: Done button + unflag -->
         <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0;align-items:flex-end">
           <button onclick="markFollowUpDone('${l.id}')"
             style="font-family:'DM Sans',sans-serif;font-size:12px;font-weight:700;padding:8px 18px;border-radius:8px;border:1.5px solid rgba(134,239,172,0.5);background:rgba(34,197,94,0.12);color:#86efac;cursor:pointer;white-space:nowrap;transition:all .15s"
