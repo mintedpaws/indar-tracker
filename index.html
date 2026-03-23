@@ -311,6 +311,7 @@ tr:hover td{background:rgba(192,96,255,0.07)!important}
       <button class="nav-btn" onclick="showView('kanban')">Leads View</button>
       <button class="nav-btn" onclick="showView('list')">List View</button>
       <button class="nav-btn" onclick="showView('followup')" style="color:#fcd34d">Rep Follow Up</button>
+      <button class="nav-btn" onclick="showView('samples')" style="color:#f9a8d4">🧪 Samples</button>
     </nav>
     <div class="topbar-center">
       <button class="btn btn-accent" onclick="openAddLead()" style="padding:10px 32px;font-size:15px;font-weight:700">+ Add lead</button>
@@ -373,6 +374,7 @@ tr:hover td{background:rgba(192,96,255,0.07)!important}
     </div>
     <div class="panel on" id="panel-dashboard"><div class="dashboard" id="dashboard-content"></div></div>
     <div class="panel" id="panel-followup"><div class="dashboard" id="followup-content"></div></div>
+    <div class="panel" id="panel-samples"><div class="dashboard" id="samples-content"></div></div>
     <div class="panel" id="panel-kanban">
       <div class="kanban-wrap">
         <div class="kanban-toolbar">
@@ -706,11 +708,12 @@ function showView(name) {
   document.querySelectorAll(".panel").forEach(p=>p.classList.remove("on"));
   document.querySelectorAll(".nav-btn").forEach(b=>b.classList.remove("on"));
   document.getElementById("panel-"+name).classList.add("on");
-  [{k:"dashboard",i:0},{k:"kanban",i:1},{k:"list",i:2},{k:"followup",i:3}].forEach(v=>{if(v.k===name) document.querySelectorAll(".nav-btn")[v.i]?.classList.add("on");});
+  [{k:"dashboard",i:0},{k:"kanban",i:1},{k:"list",i:2},{k:"followup",i:3},{k:"samples",i:4}].forEach(v=>{if(v.k===name) document.querySelectorAll(".nav-btn")[v.i]?.classList.add("on");});
   if (name==="dashboard") renderDashboard();
   if (name==="list") renderList();
   if (name==="kanban") renderKanban();
   if (name==="followup") renderFollowUp();
+  if (name==="samples") renderSamples();
 }
 function onSearch() { searchQ=document.getElementById("global-search").value.toLowerCase(); render(); }
 function render() {
@@ -719,6 +722,7 @@ function render() {
   if (v.id==="panel-list") renderList();
   if (v.id==="panel-kanban") renderKanban();
   if (v.id==="panel-followup") renderFollowUp();
+  if (v.id==="panel-samples") renderSamples();
 }
 
 // ---- DASHBOARD ----
@@ -1181,6 +1185,7 @@ function renderList() {
       </td>
 
       <td style="text-align:right;white-space:nowrap">
+        ${!['samples_progress','samples_sent','closed','dead'].includes(l.status)?`<button onclick="event.stopPropagation();quickStartSamples('${l.id}')" title="Move to Samples In Progress" style="font-family:'DM Sans',sans-serif;font-size:11px;font-weight:600;padding:3px 9px;border-radius:6px;border:0.5px solid rgba(216,180,254,0.35);background:rgba(168,85,247,0.1);color:#d8b4fe;cursor:pointer;margin-right:4px;transition:all .15s;white-space:nowrap" onmouseover="this.style.background='rgba(168,85,247,0.2)'" onmouseout="this.style.background='rgba(168,85,247,0.1)'">🧪 Samples</button>`:''}
         <button onclick="event.stopPropagation();toggleFlag('${l.id}')" title="${l.flagged?'Remove from follow-up':'Add to rep follow-up'}" style="background:${l.flagged?'rgba(252,211,77,0.15)':'transparent'};border:0.5px solid ${l.flagged?'rgba(252,211,77,0.5)':'transparent'};border-radius:6px;padding:3px 7px;cursor:pointer;font-size:14px;margin-right:4px;transition:all .15s">${l.flagged?'🔔':'🔕'}</button>
         <button class="btn btn-ghost btn-sm" onclick="openLead('${l.id}')">View</button>
       </td>
@@ -1378,6 +1383,19 @@ function renderDetailBody(l) {
         <div class="fg"><label style="font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;display:block;margin-bottom:5px">Closed date</label>
           <input type="date" value="${l.closed_date||""}" style="font-size:12px" onchange="quickUpdateField('closed_date',this.value)"></div>
       </div>
+
+      ${!['samples_progress','samples_sent','closed','dead'].includes(l.status)?`
+      <div style="margin-bottom:14px;padding:10px 14px;background:rgba(168,85,247,0.08);border:0.5px solid rgba(216,180,254,0.25);border-radius:var(--radius);display:flex;align-items:center;justify-content:space-between;gap:10px">
+        <span style="font-size:12px;color:var(--text3)">Ready to make samples for this lead?</span>
+        <button onclick="quickStartSamples('${l.id}')" style="font-family:'DM Sans',sans-serif;font-size:12px;font-weight:700;padding:7px 16px;border-radius:8px;border:1.5px solid rgba(216,180,254,0.4);background:rgba(168,85,247,0.15);color:#d8b4fe;cursor:pointer;white-space:nowrap;transition:all .15s" onmouseover="this.style.background='rgba(168,85,247,0.25)'" onmouseout="this.style.background='rgba(168,85,247,0.15)'">🧪 Start Samples</button>
+      </div>`:''}
+
+      ${['samples_progress','samples_sent'].includes(l.status)?`
+      <div style="margin-bottom:14px;padding:10px 14px;background:rgba(251,146,60,0.08);border:0.5px solid rgba(253,186,116,0.25);border-radius:var(--radius);display:flex;align-items:center;justify-content:space-between;gap:10px">
+        <span style="font-size:12px;color:var(--text3)">${l.status==='samples_progress'?'Samples made? Move to Awaiting Feedback.':'Feedback received? Move to Proofing.'}</span>
+        <button onclick="moveSampleStage('${l.id}','${l.status==='samples_progress'?'samples_sent':'proofing'}')" style="font-family:'DM Sans',sans-serif;font-size:12px;font-weight:700;padding:7px 16px;border-radius:8px;border:1.5px solid rgba(253,186,116,0.4);background:rgba(251,146,60,0.1);color:#fdba74;cursor:pointer;white-space:nowrap">${l.status==='samples_progress'?'📦 Samples Sent →':'✓ Feedback In → Proofing'}</button>
+      </div>`:''}
+
 
       <div style="border-top:0.5px solid var(--border);padding-top:14px;margin-bottom:14px">
         <p class="section-label" style="margin-bottom:10px">Contact & Company</p>
@@ -1666,6 +1684,170 @@ async function doImport() {
   leads=[...newLeads,...leads]; populateRepSelects();
   render(); closeImportModal();
   showToast("✓ "+newLeads.length+" leads imported",false,true);
+}
+
+// ---- SAMPLES TRACKER ----
+let samplesTab = "in_progress"; // "in_progress" | "awaiting_feedback"
+let samplesRepFilter = "";
+
+function daysInStage(lead) {
+  // Find the most recent activity entry where this stage was entered
+  const stageEntry = [...(lead.activity||[])].reverse().find(a =>
+    a.type === "status" && a.text && a.text.includes("→ " + STATUS_CFG[lead.status]?.label)
+  );
+  if (stageEntry && stageEntry.ts) {
+    // ts is like "Mar 20, 4:53 PM" — parse it relative to current year
+    const parsed = new Date(stageEntry.ts + " " + new Date().getFullYear());
+    if (!isNaN(parsed)) {
+      return Math.floor((Date.now() - parsed.getTime()) / 86400000);
+    }
+  }
+  // Fall back to lead_date or dateAdded
+  const fallback = lead.lead_date || lead.dateAdded;
+  if (fallback) return Math.floor((Date.now() - parseDate(fallback)) / 86400000);
+  return null;
+}
+
+function renderSamples() {
+  const el = document.getElementById("samples-content");
+  const inProgress = leads.filter(l => l.status === "samples_progress");
+  const awaitingFeedback = leads.filter(l => l.status === "samples_sent");
+  const current = samplesTab === "in_progress" ? inProgress : awaitingFeedback;
+  const filtered = samplesRepFilter ? current.filter(l => l.rep === samplesRepFilter) : current;
+
+  // Rep filter pills
+  const allSampleLeads = [...inProgress, ...awaitingFeedback];
+  const repCounts = {};
+  reps.forEach(r => { repCounts[r] = allSampleLeads.filter(l => l.rep === r).length; });
+  const repPills = reps.filter(r => repCounts[r] > 0).map(r => {
+    const c = repColor(r);
+    return `<button onclick="samplesRepFilter=samplesRepFilter==='${r}'?'':'${r}';renderSamples()"
+      style="font-family:'DM Sans',sans-serif;font-size:12px;padding:5px 14px;border-radius:20px;border:0.5px solid ${samplesRepFilter===r?c.border:'var(--border2)'};background:${samplesRepFilter===r?c.bg:'transparent'};color:${samplesRepFilter===r?c.text:'var(--text3)'};cursor:pointer;font-weight:600;display:inline-flex;align-items:center;gap:6px">
+      ${repAvatar(r,16)}${r}</button>`;
+  }).join("");
+
+  function stageCard(l) {
+    const isProgress = l.status === "samples_progress";
+    const days = daysInStage(l);
+    const daysColor = days === null ? "var(--text3)" : days > 7 ? "#fca5a5" : days > 3 ? "#fcd34d" : "#86efac";
+    const lastNote = (l.activity||[]).filter(a => a.type==="note"||a.type==="contact").slice(-1)[0];
+    const c = repColor(l.rep||"");
+    return `<div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);margin-bottom:10px;overflow:hidden;transition:border-color .15s" onmouseover="this.style.borderColor='var(--border2)'" onmouseout="this.style.borderColor='var(--border)'">
+
+      <!-- Card header -->
+      <div style="display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:0.5px solid var(--border);cursor:pointer" onclick="openLead('${l.id}')">
+        <div style="flex:1;min-width:0">
+          <span style="font-size:15px;font-weight:700;color:#fff">${l.company||""}</span>
+          ${l.firstName||l.lastName?`<span style="font-size:12px;color:var(--text3);margin-left:8px">${l.firstName||""} ${l.lastName||""}</span>`:""}
+          ${l.vertical?`<span style="font-size:11px;font-family:'DM Mono',monospace;color:var(--text3);margin-left:8px">${l.vertical}</span>`:""}
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;flex-shrink:0">
+          ${repAvatar(l.rep, 20)}
+          <span style="font-size:12px;font-weight:600;color:${c.text}">${l.rep||"—"}</span>
+          ${days !== null ? `<span style="font-size:11px;font-family:'DM Mono',monospace;color:${daysColor};background:${daysColor==='#fca5a5'?'rgba(239,68,68,0.1)':daysColor==='#fcd34d'?'rgba(252,211,77,0.1)':'rgba(34,197,94,0.08)'};padding:3px 10px;border-radius:20px;font-weight:600">${days}d</span>` : ""}
+        </div>
+      </div>
+
+      <!-- Last note -->
+      <div style="padding:10px 14px;border-bottom:0.5px solid var(--border);font-size:12px;color:${lastNote?'var(--text3)':'rgba(255,255,255,0.2)'};font-style:${lastNote?'italic':'normal'}">
+        ${lastNote?`"${lastNote.text.slice(0,100)}${lastNote.text.length>100?"…":""}"`:`<span style="color:var(--text3)">No notes yet — add one below</span>`}
+      </div>
+
+      <!-- Actions -->
+      <div style="display:flex;align-items:center;gap:8px;padding:10px 14px;flex-wrap:wrap">
+        <input id="samp-note-${l.id}" placeholder="Add a note..." style="flex:1;min-width:140px;font-size:12px;padding:6px 10px;background:var(--bg3);border:0.5px solid var(--border2);border-radius:6px;color:var(--text)"
+          onkeydown="if(event.key==='Enter')saveSampleNote('${l.id}')">
+        <button onclick="saveSampleNote('${l.id}')" style="font-family:'DM Sans',sans-serif;font-size:11px;padding:5px 11px;border-radius:6px;border:0.5px solid var(--border2);background:var(--bg3);color:var(--text2);cursor:pointer">Note</button>
+        ${isProgress
+          ? `<button onclick="moveSampleStage('${l.id}','samples_sent')" style="font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;padding:6px 14px;border-radius:8px;border:1.5px solid rgba(249,168,212,0.4);background:rgba(236,72,153,0.1);color:#f9a8d4;cursor:pointer;white-space:nowrap">📦 Samples Sent →</button>`
+          : `<button onclick="moveSampleStage('${l.id}','proofing')" style="font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;padding:6px 14px;border-radius:8px;border:1.5px solid rgba(253,186,116,0.4);background:rgba(251,146,60,0.1);color:#fdba74;cursor:pointer;white-space:nowrap">✓ Feedback In → Proofing</button>`
+        }
+        <button onclick="openLead('${l.id}')" style="font-family:'DM Sans',sans-serif;font-size:11px;padding:5px 10px;border-radius:6px;border:0.5px solid var(--border2);background:transparent;color:var(--text3);cursor:pointer">View</button>
+      </div>
+    </div>`;
+  }
+
+  el.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;flex-wrap:wrap;gap:10px">
+      <div>
+        <h2 style="font-size:18px;font-weight:700;color:#fff;margin-bottom:4px">🧪 Sample Tracker</h2>
+        <p style="font-size:12px;color:var(--text3)">Track every lead with samples in motion</p>
+      </div>
+      <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+        ${repPills}
+      </div>
+    </div>
+
+    <!-- Sub-tabs -->
+    <div style="display:flex;gap:0;margin-bottom:1.25rem;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:4px;width:fit-content">
+      <button onclick="samplesTab='in_progress';renderSamples()"
+        style="font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;padding:8px 20px;border-radius:10px;border:none;cursor:pointer;transition:all .15s;background:${samplesTab==='in_progress'?'var(--samples-p-bg)':'transparent'};color:${samplesTab==='in_progress'?'#d8b4fe':'var(--text3)'}">
+        🔨 In Progress <span style="font-size:11px;font-family:'DM Mono',monospace;margin-left:4px;opacity:.8">(${inProgress.length})</span>
+      </button>
+      <button onclick="samplesTab='awaiting_feedback';renderSamples()"
+        style="font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;padding:8px 20px;border-radius:10px;border:none;cursor:pointer;transition:all .15s;background:${samplesTab==='awaiting_feedback'?'var(--samples-s-bg)':'transparent'};color:${samplesTab==='awaiting_feedback'?'#f9a8d4':'var(--text3)'}">
+        👀 Awaiting Feedback <span style="font-size:11px;font-family:'DM Mono',monospace;margin-left:4px;opacity:.8">(${awaitingFeedback.length})</span>
+      </button>
+    </div>
+
+    <!-- Summary bar -->
+    <div style="display:flex;gap:10px;margin-bottom:1.25rem;flex-wrap:wrap">
+      ${[
+        {label:"Total in bucket", val:filtered.length, color:"var(--text2)"},
+        {label:"Overdue (7+ days)", val:filtered.filter(l=>{const d=daysInStage(l);return d!==null&&d>7;}).length, color:"#fca5a5"},
+        {label:"Watch (4–7 days)", val:filtered.filter(l=>{const d=daysInStage(l);return d!==null&&d>=4&&d<=7;}).length, color:"#fcd34d"},
+        {label:"Fresh (≤3 days)", val:filtered.filter(l=>{const d=daysInStage(l);return d!==null&&d<=3;}).length, color:"#86efac"},
+      ].map(s=>`<div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:10px 18px;display:flex;flex-direction:column;gap:3px">
+        <span style="font-size:18px;font-weight:700;color:${s.color};font-family:'DM Mono',monospace">${s.val}</span>
+        <span style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;font-weight:600">${s.label}</span>
+      </div>`).join("")}
+    </div>
+
+    <!-- Cards -->
+    ${filtered.length === 0
+      ? `<div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:3rem;text-align:center">
+          <div style="font-size:32px;margin-bottom:12px">✅</div>
+          <p style="font-size:15px;font-weight:600;color:#fff;margin-bottom:6px">Nothing here</p>
+          <p style="font-size:13px;color:var(--text3)">No leads in this bucket right now.</p>
+        </div>`
+      : filtered.sort((a,b)=>{const da=daysInStage(a)||0,db=daysInStage(b)||0;return db-da;}).map(stageCard).join("")
+    }`;
+}
+
+async function saveSampleNote(id) {
+  const inp = document.getElementById("samp-note-"+id);
+  const text = inp?.value.trim(); if (!text) return;
+  const lead = leads.find(l=>l.id===id); if (!lead) return;
+  addActivity(lead, "note", text);
+  lead.last_contact_date = today();
+  await dbSaveLead(lead);
+  inp.value = "";
+  renderSamples();
+  showToast("✓ Note saved", false, true);
+}
+
+async function quickStartSamples(id) {
+  const lead = leads.find(l=>l.id===id); if(!lead) return;
+  const old = STATUS_CFG[lead.status]?.label;
+  lead.status = "samples_progress";
+  addActivity(lead, "status", `Stage changed: ${old} → ${STATUS_CFG.samples_progress.label}`);
+  await dbSaveLead(lead);
+  render();
+  // If modal is open, re-render it
+  if(editId===id) renderDetailBody(lead);
+  showToast("🧪 Moved to Samples In Progress", false, true);
+}
+
+async function moveSampleStage(id, newStatus) {
+  const lead = leads.find(l=>l.id===id); if (!lead) return;
+  const old = STATUS_CFG[lead.status]?.label;
+  lead.status = newStatus;
+  addActivity(lead, "status", `Stage changed: ${old} → ${STATUS_CFG[newStatus].label}`);
+  await dbSaveLead(lead);
+  render();
+  if(editId===id) renderDetailBody(lead);
+  const msg = newStatus==="samples_sent" ? "📦 Moved to Awaiting Feedback" : "✓ Moved to Proofing";
+  showToast(msg, false, true);
 }
 
 ["add-modal","detail-modal","import-modal"].forEach(id=>{
