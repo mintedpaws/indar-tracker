@@ -71,7 +71,10 @@ select option{background:#3c2268;color:#fff}
 .nav-btn{font-family:'DM Sans',sans-serif;font-size:13px;padding:6px 16px;border-radius:var(--radius);border:none;cursor:pointer;background:transparent;color:var(--text3);transition:all .15s;font-weight:600}
 .nav-btn:hover{background:var(--bg3);color:#fff}
 .nav-btn.on{background:var(--accent-dim);color:#fff;border:0.5px solid var(--border2)}
-.topbar-center{position:absolute;left:50%;transform:translateX(-50%)}
+.topbar-center{position:absolute;left:50%;transform:translateX(-50%);pointer-events:none}
+.topbar-center .btn{pointer-events:all}
+.topbar-nav{display:flex;gap:2px;margin-left:1rem;overflow-x:auto;flex-shrink:1;min-width:0}
+.topbar-nav::-webkit-scrollbar{display:none}
 .topbar-right{margin-left:auto;display:flex;align-items:center;gap:10px}
 .search-wrap{position:relative}
 .search-wrap input{width:220px;padding-left:32px;font-size:12px}
@@ -1831,7 +1834,7 @@ async function doImport() {
 let reviewRep = "";
 let reviewStaleOnly = false;
 let reviewSelected = new Set();
-let reviewBulkStage = "";
+let reviewSort = "stale"; // "stale" | "lead_date_asc" | "lead_date_desc" | "last_touch"
 
 function renderReview() {
   const el = document.getElementById("review-content");
@@ -1855,8 +1858,11 @@ function renderReview() {
   let filtered = leads.filter(l => l.status !== "dead" || reviewStaleOnly === false);
   if (currentRep !== "All") filtered = filtered.filter(l => l.rep === currentRep);
   if (reviewStaleOnly) filtered = filtered.filter(isStale);
-  // Sort: stale first, then by last contact oldest first
   filtered = filtered.slice().sort((a,b) => {
+    if (reviewSort === "lead_date_asc")  return parseDate(a.lead_date||a.dateAdded||"") - parseDate(b.lead_date||b.dateAdded||"");
+    if (reviewSort === "lead_date_desc") return parseDate(b.lead_date||b.dateAdded||"") - parseDate(a.lead_date||a.dateAdded||"");
+    if (reviewSort === "last_touch")     return parseDate(a.last_contact_date||"") - parseDate(b.last_contact_date||"");
+    // default: stale first, then oldest last touch
     const aStale = isStale(a) ? 0 : 1;
     const bStale = isStale(b) ? 0 : 1;
     if (aStale !== bStale) return aStale - bStale;
@@ -1882,6 +1888,14 @@ function renderReview() {
         <p style="font-size:13px;color:var(--text3)">Update stages fast · bulk actions · built for team calls</p>
       </div>
       <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <!-- Sort -->
+        <select onchange="reviewSort=this.value;renderReview()"
+          style="font-size:12px;padding:7px 12px;width:auto;background:var(--bg3);border:1px solid var(--border2);border-radius:8px;color:var(--text2);cursor:pointer">
+          <option value="stale" ${reviewSort==="stale"?"selected":""}>Sort: Stale first</option>
+          <option value="last_touch" ${reviewSort==="last_touch"?"selected":""}>Sort: Last touch</option>
+          <option value="lead_date_desc" ${reviewSort==="lead_date_desc"?"selected":""}>Sort: Lead date ↓</option>
+          <option value="lead_date_asc" ${reviewSort==="lead_date_asc"?"selected":""}>Sort: Lead date ↑</option>
+        </select>
         <!-- Stale toggle -->
         <button onclick="reviewStaleOnly=!reviewStaleOnly;reviewSelected=new Set();renderReview()"
           style="font-family:'DM Sans',sans-serif;font-size:13px;font-weight:700;padding:8px 16px;border-radius:8px;border:1.5px solid ${reviewStaleOnly?'rgba(252,211,77,0.6)':'var(--border2)'};background:${reviewStaleOnly?'rgba(252,211,77,0.12)':'transparent'};color:${reviewStaleOnly?'#fcd34d':'var(--text3)'};cursor:pointer;transition:all .15s">
@@ -1936,13 +1950,14 @@ function renderReview() {
       </div>` : `
     <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden">
       <!-- Table header -->
-      <div style="display:grid;grid-template-columns:36px 1fr 140px 120px 110px 90px;align-items:center;padding:10px 16px;background:var(--bg3);border-bottom:1px solid var(--border2);gap:12px">
+      <div style="display:grid;grid-template-columns:36px 1fr 140px 120px 90px 90px 90px;align-items:center;padding:10px 16px;background:var(--bg3);border-bottom:1px solid var(--border2);gap:12px">
         <input type="checkbox" ${allChecked?'checked':''} onchange="toggleSelectAll(${JSON.stringify(filtered.map(l=>l.id))})"
           style="width:16px;height:16px;cursor:pointer;accent-color:var(--accent)">
         <span style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.07em">Company / Contact</span>
         <span style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.07em">Stage</span>
         <span style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.07em">Rep</span>
-        <span style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.07em">Last Touch</span>
+        <span onclick="reviewSort=reviewSort==='lead_date_desc'?'lead_date_asc':'lead_date_desc';renderReview()" style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;cursor:pointer;user-select:none">Lead Date ${reviewSort==='lead_date_desc'?'↓':reviewSort==='lead_date_asc'?'↑':'↕'}</span>
+        <span onclick="reviewSort='last_touch';renderReview()" style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;cursor:pointer;user-select:none">Last Touch ${reviewSort==='last_touch'?'↑':'↕'}</span>
         <span style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.07em">Notes</span>
       </div>
 
@@ -1960,7 +1975,7 @@ function renderReview() {
         const lastNote = (l.activity||[]).filter(a=>a.type==="note"||a.type==="contact").slice(-1)[0];
         const statusOpts = STATUSES.map(s=>`<option value="${s}"${l.status===s?" selected":""}>${STATUS_CFG[s].label}</option>`).join("");
 
-        return `<div style="display:grid;grid-template-columns:36px 1fr 140px 120px 110px 90px;align-items:center;padding:13px 16px;border-bottom:0.5px solid var(--border);gap:12px;background:${checked?'rgba(192,96,255,0.08)':stale?'rgba(252,211,77,0.03)':'transparent'};transition:background .1s" onmouseover="if(!${checked})this.style.background='rgba(192,96,255,0.04)'" onmouseout="this.style.background='${checked?'rgba(192,96,255,0.08)':stale?'rgba(252,211,77,0.03)':'transparent'}'">
+        return `<div style="display:grid;grid-template-columns:36px 1fr 140px 120px 90px 90px 90px;align-items:center;padding:13px 16px;border-bottom:0.5px solid var(--border);gap:12px;background:${checked?'rgba(192,96,255,0.08)':stale?'rgba(252,211,77,0.03)':'transparent'};transition:background .1s" onmouseover="if(!${checked})this.style.background='rgba(192,96,255,0.04)'" onmouseout="this.style.background='${checked?'rgba(192,96,255,0.08)':stale?'rgba(252,211,77,0.03)':'transparent'}'">
           <input type="checkbox" ${checked?'checked':''} onchange="toggleSelectLead('${l.id}')"
             style="width:16px;height:16px;cursor:pointer;accent-color:var(--accent)">
           <div onclick="openLead('${l.id}')" style="cursor:pointer;min-width:0">
@@ -1981,19 +1996,24 @@ function renderReview() {
             <span style="font-size:12px;font-weight:600;color:${c.text}">${l.rep||"—"}</span>
           </div>
           <div>
+            <span style="font-size:12px;color:var(--text3)">${l.lead_date?fmtDate(l.lead_date):"—"}</span>
+          </div>
+          <div>
             <div style="font-size:12px;color:${daysSince!==null&&daysSince>30?'#fca5a5':'var(--text3)'}">
               ${daysSince!==null?`${daysSince}d ago`:"—"}
             </div>
           </div>
-          <div onclick="event.stopPropagation()">
-            <span id="rv-note-display-${l.id}" style="font-size:11px;color:var(--text3);cursor:pointer;padding:3px 6px;border-radius:4px;border:0.5px solid transparent;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:80px"
+          <div onclick="event.stopPropagation();event.preventDefault()" style="position:relative">
+            <span id="rv-note-display-${l.id}" style="font-size:11px;color:${lastNote?'var(--accent-bright)':'var(--text3)'};cursor:pointer;padding:3px 6px;border-radius:4px;border:0.5px solid transparent;display:block;white-space:nowrap"
               onmouseover="this.style.borderColor='var(--border2)'" onmouseout="this.style.borderColor='transparent'"
-              onclick="openReviewNote('${l.id}',this)">${lastNote?'📝 note':'+ note'}</span>
-            <div id="rv-note-wrap-${l.id}" style="display:none;position:absolute;z-index:100;background:var(--bg2);border:1px solid var(--accent);border-radius:var(--radius);padding:8px;box-shadow:var(--shadow-lg);width:260px">
-              <input id="rv-note-${l.id}" placeholder="Add note..." style="font-size:12px;padding:6px 10px;margin-bottom:6px">
+              onclick="openReviewNote('${l.id}',this)">${lastNote?'📝 view':'+ note'}</span>
+            <div id="rv-note-wrap-${l.id}" style="display:none;position:fixed;z-index:500;background:var(--bg2);border:1px solid var(--accent);border-radius:var(--radius);padding:10px;box-shadow:var(--shadow-lg);width:280px">
+              <div style="font-size:10px;color:var(--text3);margin-bottom:6px;font-weight:600">Saves note + sets Last Contact to today</div>
+              <input id="rv-note-${l.id}" placeholder="Add note..." style="font-size:13px;padding:8px 10px;margin-bottom:8px;width:100%"
+                onkeydown="if(event.key==='Enter')saveReviewNote('${l.id}');if(event.key==='Escape')closeReviewNote('${l.id}')">
               <div style="display:flex;gap:6px">
-                <button onclick="saveReviewNote('${l.id}')" style="font-family:'DM Sans',sans-serif;font-size:12px;font-weight:700;padding:5px 12px;border-radius:6px;border:none;background:var(--accent);color:#fff;cursor:pointer;flex:1">Save</button>
-                <button onclick="closeReviewNote('${l.id}')" style="font-family:'DM Sans',sans-serif;font-size:11px;padding:5px 8px;border-radius:6px;border:0.5px solid var(--border2);background:transparent;color:var(--text3);cursor:pointer">✕</button>
+                <button onclick="saveReviewNote('${l.id}')" style="font-family:'DM Sans',sans-serif;font-size:12px;font-weight:700;padding:6px 14px;border-radius:6px;border:none;background:var(--accent);color:#fff;cursor:pointer;flex:1">Save</button>
+                <button onclick="closeReviewNote('${l.id}')" style="font-family:'DM Sans',sans-serif;font-size:11px;padding:6px 8px;border-radius:6px;border:0.5px solid var(--border2);background:transparent;color:var(--text3);cursor:pointer">✕</button>
               </div>
             </div>
           </div>
@@ -2037,13 +2057,14 @@ async function reviewUpdateStage(id, newStatus) {
   render();
 }
 function openReviewNote(id, el) {
-  // Close any other open note popups
   document.querySelectorAll('[id^="rv-note-wrap-"]').forEach(w => { if (w.id !== "rv-note-wrap-"+id) w.style.display="none"; });
   const wrap = document.getElementById("rv-note-wrap-"+id);
   if (!wrap) return;
   const open = wrap.style.display === "none";
-  // Position relative to the display element
   if (open) {
+    const rect = el.getBoundingClientRect();
+    wrap.style.top = (rect.bottom + 4) + "px";
+    wrap.style.left = Math.min(rect.left, window.innerWidth - 290) + "px";
     wrap.style.display = "block";
     setTimeout(() => document.getElementById("rv-note-"+id)?.focus(), 50);
   } else {
