@@ -881,7 +881,61 @@ function renderDashboard() {
       <div class="chart-card"><h3>Leads by vertical</h3><div class="chart-wrap"><canvas id="chart-vertical"></canvas></div></div>
       <div class="chart-card"><h3>Invoices by vertical</h3><div class="chart-wrap"><canvas id="chart-inv-vertical"></canvas></div></div>
       <div class="chart-card"><h3>Estimates by vertical</h3><div class="chart-wrap"><canvas id="chart-est-vertical"></canvas></div></div>
+    </div>
+
+    <!-- RECENT ACTIVITY FEED -->
+    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:1.5rem">
+      <div style="padding:1rem 1.25rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+        <h3 style="font-size:13px;font-weight:700;color:#fff;display:flex;align-items:center;gap:8px">⚡ Recent Activity <span style="font-size:11px;color:var(--text3);font-weight:400">across all reps</span></h3>
+        <span style="font-size:11px;color:var(--text3)">Last 50 actions</span>
+      </div>
+      <div style="max-height:420px;overflow-y:auto">
+        ${(()=>{
+          // Collect all activity entries across all leads, attach lead info
+          const allEvents = [];
+          leads.forEach(l => {
+            (l.activity||[]).forEach(a => {
+              allEvents.push({...a, leadId:l.id, leadName:`${l.firstName||""} ${l.lastName||""}`.trim(), company:l.company||"", rep:l.rep||"", status:l.status});
+            });
+          });
+          // Sort by timestamp — ts is like "Mar 20, 4:53 PM", parse with current year
+          allEvents.sort((a,b) => {
+            const pa = new Date((a.ts||"") + " " + new Date().getFullYear()).getTime() || 0;
+            const pb = new Date((b.ts||"") + " " + new Date().getFullYear()).getTime() || 0;
+            return pb - pa;
+          });
+          const recent = allEvents.slice(0, 50);
+          if (!recent.length) return `<div style="padding:2rem;text-align:center;font-size:13px;color:var(--text3)">No activity yet.</div>`;
+
+          const typeIcon = {note:"·", status:"→", contact:"📞", created:"★"};
+          const typeBg   = {note:"var(--bg3)", status:"var(--accent-dim)", contact:"rgba(34,197,94,.12)", created:"rgba(99,102,241,.12)"};
+          const typeCl   = {note:"var(--text3)", status:"var(--accent-bright)", contact:"#86efac", created:"#a5b4fc"};
+
+          return recent.map((a, i) => {
+            const c = repColor(a.rep||"");
+            const sc = STATUS_CFG[a.status]||STATUS_CFG.new;
+            return `<div onclick="openLead('${a.leadId}')" style="display:flex;align-items:flex-start;gap:12px;padding:11px 16px;border-bottom:0.5px solid var(--border);cursor:pointer;transition:background .1s" onmouseover="this.style.background='rgba(192,96,255,0.05)'" onmouseout="this.style.background='transparent'">
+              <!-- Icon -->
+              <div style="width:28px;height:28px;border-radius:50%;background:${typeBg[a.type]||typeBg.note};display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0;margin-top:1px;color:${typeCl[a.type]||typeCl.note}">${typeIcon[a.type]||"·"}</div>
+              <!-- Content -->
+              <div style="flex:1;min-width:0">
+                <div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-bottom:3px">
+                  <span style="font-size:13px;font-weight:700;color:#fff">${a.company}</span>
+                  ${a.leadName?`<span style="font-size:11px;color:var(--text3)">${a.leadName}</span>`:""}
+                  <span class="sbadge" style="background:${sc.bg};color:${sc.cl};font-size:9px">${sc.label}</span>
+                </div>
+                <div style="font-size:12px;color:var(--text2);line-height:1.5;margin-bottom:3px">${a.text}</div>
+                <div style="display:flex;align-items:center;gap:8px">
+                  ${a.rep?`<span style="display:inline-flex;align-items:center;gap:4px">${repAvatar(a.rep,14)}<span style="font-size:11px;color:${c.text};font-weight:600">${a.rep}</span></span>`:""}
+                  <span style="font-size:10px;color:var(--text3);font-family:'DM Mono',monospace">${a.ts||""}</span>
+                </div>
+              </div>
+            </div>`;
+          }).join("");
+        })()}
+      </div>
     </div>`;
+
 
   setTimeout(()=>{
     if (charts.pipeline) charts.pipeline.destroy();
