@@ -2004,16 +2004,22 @@ function renderReview() {
             </div>
           </div>
           <div onclick="event.stopPropagation();event.preventDefault()" style="position:relative">
-            <span id="rv-note-display-${l.id}" style="font-size:11px;color:${lastNote?'var(--accent-bright)':'var(--text3)'};cursor:pointer;padding:3px 6px;border-radius:4px;border:0.5px solid transparent;display:block;white-space:nowrap"
-              onmouseover="this.style.borderColor='var(--border2)'" onmouseout="this.style.borderColor='transparent'"
-              onclick="openReviewNote('${l.id}',this)">${lastNote?'📝 view':'+ note'}</span>
-            <div id="rv-note-wrap-${l.id}" style="display:none;position:fixed;z-index:500;background:var(--bg2);border:1px solid var(--accent);border-radius:var(--radius);padding:10px;box-shadow:var(--shadow-lg);width:280px">
-              <div style="font-size:10px;color:var(--text3);margin-bottom:6px;font-weight:600">Saves note + sets Last Contact to today</div>
-              <input id="rv-note-${l.id}" placeholder="Add note..." style="font-size:13px;padding:8px 10px;margin-bottom:8px;width:100%"
-                onkeydown="if(event.key==='Enter')saveReviewNote('${l.id}');if(event.key==='Escape')closeReviewNote('${l.id}')">
+            <span id="rv-note-display-${l.id}" style="font-size:12px;font-weight:600;color:var(--accent-bright);cursor:pointer;padding:4px 8px;border-radius:6px;border:0.5px solid transparent;display:inline-block;white-space:nowrap;transition:all .15s"
+              onmouseover="this.style.borderColor='var(--border2)';this.style.background='var(--bg3)'" onmouseout="this.style.borderColor='transparent';this.style.background='transparent'"
+              onclick="openReviewNote('${l.id}',this)">+ note</span>
+            <div id="rv-note-wrap-${l.id}" style="display:none;position:fixed;z-index:500;background:var(--bg2);border:1px solid var(--accent);border-radius:var(--radius-lg);padding:12px;box-shadow:var(--shadow-lg);width:300px">
+              <div style="font-size:11px;font-weight:600;color:var(--text3);margin-bottom:8px;text-transform:uppercase;letter-spacing:.06em">Add note for ${l.company}</div>
+              <textarea id="rv-note-${l.id}" placeholder="What happened on this call?" rows="3"
+                style="font-size:13px;padding:8px 10px;margin-bottom:8px;width:100%;resize:none;line-height:1.5"
+                onkeydown="if(event.key==='Enter'&&event.metaKey)saveReviewNote('${l.id}');if(event.key==='Escape')closeReviewNote('${l.id}')"></textarea>
+              <div class="fg" style="margin-bottom:10px">
+                <label style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:4px;display:block">Set follow-up date (optional)</label>
+                <input type="date" id="rv-followup-${l.id}" value="${l.followup||''}" style="font-size:12px;padding:6px 10px;width:100%">
+              </div>
+              <div style="font-size:10px;color:var(--text3);margin-bottom:8px">💡 Saves note · sets Last Contact to today</div>
               <div style="display:flex;gap:6px">
-                <button onclick="saveReviewNote('${l.id}')" style="font-family:'DM Sans',sans-serif;font-size:12px;font-weight:700;padding:6px 14px;border-radius:6px;border:none;background:var(--accent);color:#fff;cursor:pointer;flex:1">Save</button>
-                <button onclick="closeReviewNote('${l.id}')" style="font-family:'DM Sans',sans-serif;font-size:11px;padding:6px 8px;border-radius:6px;border:0.5px solid var(--border2);background:transparent;color:var(--text3);cursor:pointer">✕</button>
+                <button onclick="saveReviewNote('${l.id}')" style="font-family:'DM Sans',sans-serif;font-size:13px;font-weight:700;padding:8px 14px;border-radius:8px;border:none;background:var(--accent);color:#fff;cursor:pointer;flex:1">Save</button>
+                <button onclick="closeReviewNote('${l.id}')" style="font-family:'DM Sans',sans-serif;font-size:12px;padding:8px 10px;border-radius:8px;border:0.5px solid var(--border2);background:transparent;color:var(--text3);cursor:pointer">✕</button>
               </div>
             </div>
           </div>
@@ -2081,10 +2087,12 @@ async function saveReviewNote(id) {
   const lead = leads.find(l => l.id === id); if (!lead) return;
   addActivity(lead, "note", text);
   lead.last_contact_date = today();
+  const followupEl = document.getElementById("rv-followup-"+id);
+  if (followupEl?.value) lead.followup = followupEl.value;
   await dbSaveLead(lead);
   closeReviewNote(id);
   render();
-  showToast("✓ Note saved", false, true);
+  showToast("✓ Note saved" + (followupEl?.value ? " · follow-up set" : ""), false, true);
 }
 let samplesTab = "in_progress"; // "in_progress" | "awaiting_feedback"
 let samplesRepFilter = "";
