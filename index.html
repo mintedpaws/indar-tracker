@@ -312,6 +312,7 @@ tr:hover td{background:rgba(192,96,255,0.07)!important}
       <button class="nav-btn" onclick="showView('list')">List View</button>
       <button class="nav-btn" onclick="showView('followup')" style="color:#fcd34d">Rep Follow Up</button>
       <button class="nav-btn" onclick="showView('samples')" style="color:#f9a8d4">🧪 Samples</button>
+      <button class="nav-btn" onclick="showView('review')" style="color:#86efac">🎯 Review Mode</button>
     </nav>
     <div class="topbar-center">
       <button class="btn btn-accent" onclick="openAddLead()" style="padding:10px 32px;font-size:15px;font-weight:700">+ Add lead</button>
@@ -375,6 +376,7 @@ tr:hover td{background:rgba(192,96,255,0.07)!important}
     <div class="panel on" id="panel-dashboard"><div class="dashboard" id="dashboard-content"></div></div>
     <div class="panel" id="panel-followup"><div class="dashboard" id="followup-content"></div></div>
     <div class="panel" id="panel-samples"><div class="dashboard" id="samples-content"></div></div>
+    <div class="panel" id="panel-review"><div class="dashboard" id="review-content"></div></div>
     <div class="panel" id="panel-kanban">
       <div class="kanban-wrap">
         <div class="kanban-toolbar">
@@ -708,12 +710,13 @@ function showView(name) {
   document.querySelectorAll(".panel").forEach(p=>p.classList.remove("on"));
   document.querySelectorAll(".nav-btn").forEach(b=>b.classList.remove("on"));
   document.getElementById("panel-"+name).classList.add("on");
-  [{k:"dashboard",i:0},{k:"kanban",i:1},{k:"list",i:2},{k:"followup",i:3},{k:"samples",i:4}].forEach(v=>{if(v.k===name) document.querySelectorAll(".nav-btn")[v.i]?.classList.add("on");});
+  [{k:"dashboard",i:0},{k:"kanban",i:1},{k:"list",i:2},{k:"followup",i:3},{k:"samples",i:4},{k:"review",i:5}].forEach(v=>{if(v.k===name) document.querySelectorAll(".nav-btn")[v.i]?.classList.add("on");});
   if (name==="dashboard") renderDashboard();
   if (name==="list") renderList();
   if (name==="kanban") renderKanban();
   if (name==="followup") renderFollowUp();
   if (name==="samples") renderSamples();
+  if (name==="review") renderReview();
 }
 function onSearch() { searchQ=document.getElementById("global-search").value.toLowerCase(); render(); }
 function render() {
@@ -723,6 +726,7 @@ function render() {
   if (v.id==="panel-kanban") renderKanban();
   if (v.id==="panel-followup") renderFollowUp();
   if (v.id==="panel-samples") renderSamples();
+  if (v.id==="panel-review") renderReview();
 }
 
 // ---- DASHBOARD ----
@@ -1823,7 +1827,244 @@ async function doImport() {
   showToast("✓ "+newLeads.length+" leads imported",false,true);
 }
 
-// ---- SAMPLES TRACKER ----
+// ---- REVIEW MODE ----
+let reviewRep = "";
+let reviewStaleOnly = false;
+let reviewSelected = new Set();
+let reviewBulkStage = "";
+
+function renderReview() {
+  const el = document.getElementById("review-content");
+  const thirtyDaysAgo = Date.now() - (30 * 86400000);
+
+  function isStale(l) {
+    if (["dead","closed"].includes(l.status)) return false;
+    const lastAction = (l.activity||[]).filter(a=>a.type==="note"||a.type==="contact").slice(-1)[0];
+    if (lastAction?.ts) {
+      const p = new Date(lastAction.ts+" "+new Date().getFullYear()).getTime();
+      if (!isNaN(p) && p > thirtyDaysAgo) return false;
+    }
+    if (l.last_contact_date && parseDate(l.last_contact_date) > thirtyDaysAgo) return false;
+    return true;
+  }
+
+  // Build rep list — All + each rep
+  const repList = ["All", ...reps];
+  const currentRep = reviewRep || "All";
+
+  let filtered = leads.filter(l => l.status !== "dead" || reviewStaleOnly === false);
+  if (currentRep !== "All") filtered = filtered.filter(l => l.rep === currentRep);
+  if (reviewStaleOnly) filtered = filtered.filter(isStale);
+  // Sort: stale first, then by last contact oldest first
+  filtered = filtered.slice().sort((a,b) => {
+    const aStale = isStale(a) ? 0 : 1;
+    const bStale = isStale(b) ? 0 : 1;
+    if (aStale !== bStale) return aStale - bStale;
+    return parseDate(a.last_contact_date||"") - parseDate(b.last_contact_date||"");
+  });
+
+  const selectedInView = filtered.filter(l => reviewSelected.has(l.id));
+  const allChecked = filtered.length > 0 && filtered.every(l => reviewSelected.has(l.id));
+
+  // Rep tab counts
+  const repTabCounts = {};
+  repList.forEach(r => {
+    let base = r === "All" ? leads : leads.filter(l => l.rep === r);
+    if (reviewStaleOnly) base = base.filter(isStale);
+    repTabCounts[r] = base.length;
+  });
+
+  el.innerHTML = `
+    <!-- Header -->
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:1.25rem;flex-wrap:wrap;gap:12px">
+      <div>
+        <h2 style="font-size:20px;font-weight:700;color:#fff;margin-bottom:4px">🎯 Review Mode</h2>
+        <p style="font-size:13px;color:var(--text3)">Update stages fast · bulk actions · built for team calls</p>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <!-- Stale toggle -->
+        <button onclick="reviewStaleOnly=!reviewStaleOnly;reviewSelected=new Set();renderReview()"
+          style="font-family:'DM Sans',sans-serif;font-size:13px;font-weight:700;padding:8px 16px;border-radius:8px;border:1.5px solid ${reviewStaleOnly?'rgba(252,211,77,0.6)':'var(--border2)'};background:${reviewStaleOnly?'rgba(252,211,77,0.12)':'transparent'};color:${reviewStaleOnly?'#fcd34d':'var(--text3)'};cursor:pointer;transition:all .15s">
+          ⚠️ Stale only ${reviewStaleOnly?'✓':''}
+        </button>
+        <span style="font-size:12px;color:var(--text3);font-family:'DM Mono',monospace">${filtered.length} leads</span>
+      </div>
+    </div>
+
+    <!-- Rep tabs -->
+    <div style="display:flex;gap:6px;margin-bottom:1.25rem;flex-wrap:wrap">
+      ${repList.map(r => {
+        const on = currentRep === r;
+        const c = r === "All" ? null : repColor(r);
+        const cnt = repTabCounts[r] || 0;
+        return `<button onclick="reviewRep='${r==='All'?'':r}';reviewSelected=new Set();renderReview()"
+          style="font-family:'DM Sans',sans-serif;font-size:14px;font-weight:700;padding:10px 22px;border-radius:10px;border:1.5px solid ${on?(c?c.border:'var(--accent-bright)'):'var(--border)'};background:${on?(c?c.bg:'var(--accent-dim)'):'var(--bg2)'};color:${on?(c?c.text:'#fff'):'var(--text3)'};cursor:pointer;transition:all .15s;display:inline-flex;align-items:center;gap:8px">
+          ${r !== "All" ? repAvatar(r, 20) : ""}
+          ${r}
+          <span style="font-size:12px;opacity:.7;font-family:'DM Mono',monospace">${cnt}</span>
+        </button>`;
+      }).join("")}
+    </div>
+
+    <!-- Bulk action bar -->
+    ${reviewSelected.size > 0 ? `
+    <div style="display:flex;align-items:center;gap:10px;padding:12px 16px;background:var(--accent-dim);border:1px solid var(--accent);border-radius:var(--radius-lg);margin-bottom:1rem;flex-wrap:wrap">
+      <span style="font-size:13px;font-weight:700;color:#fff">${reviewSelected.size} selected</span>
+      <span style="font-size:12px;color:var(--text3)">Move to:</span>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;flex:1">
+        ${[
+          {s:"dead",    label:"💀 Dead",    bg:"rgba(239,68,68,0.2)",   border:"rgba(239,68,68,0.5)",   cl:"#fca5a5"},
+          {s:"closed",  label:"✅ Closed",  bg:"rgba(34,197,94,0.2)",   border:"rgba(34,197,94,0.5)",   cl:"#86efac"},
+          {s:"contacted",label:"📞 Contacted",bg:"rgba(14,165,233,0.2)",border:"rgba(14,165,233,0.5)", cl:"#7dd3fc"},
+          {s:"needs_updates",label:"⚡ Needs Updates",bg:"rgba(239,68,68,0.15)",border:"rgba(239,68,68,0.4)",cl:"#ff6b6b"},
+          {s:"estimate_sent",label:"💰 Estimate Sent",bg:"rgba(252,211,77,0.15)",border:"rgba(252,211,77,0.4)",cl:"#fcd34d"},
+          {s:"proofing", label:"🎨 Proofing", bg:"rgba(251,146,60,0.15)", border:"rgba(251,146,60,0.4)", cl:"#fdba74"},
+        ].map(opt=>`<button onclick="bulkUpdateStage('${opt.s}')"
+          style="font-family:'DM Sans',sans-serif;font-size:12px;font-weight:700;padding:6px 14px;border-radius:8px;border:1.5px solid ${opt.border};background:${opt.bg};color:${opt.cl};cursor:pointer;white-space:nowrap;transition:all .15s"
+          onmouseover="this.style.opacity='.8'" onmouseout="this.style.opacity='1'">${opt.label}</button>`).join("")}
+      </div>
+      <button onclick="reviewSelected=new Set();renderReview()"
+        style="font-family:'DM Sans',sans-serif;font-size:11px;padding:5px 10px;border-radius:6px;border:0.5px solid var(--border2);background:transparent;color:var(--text3);cursor:pointer">✕ Clear</button>
+    </div>` : ""}
+
+    <!-- Table -->
+    ${filtered.length === 0 ? `
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:3rem;text-align:center">
+        <div style="font-size:32px;margin-bottom:12px">✅</div>
+        <p style="font-size:15px;font-weight:600;color:#fff;margin-bottom:6px">All clear</p>
+        <p style="font-size:13px;color:var(--text3)">${reviewStaleOnly?"No stale leads for this rep.":"No leads found."}</p>
+      </div>` : `
+    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden">
+      <!-- Table header -->
+      <div style="display:grid;grid-template-columns:36px 1fr 140px 120px 110px 90px;align-items:center;padding:10px 16px;background:var(--bg3);border-bottom:1px solid var(--border2);gap:12px">
+        <input type="checkbox" ${allChecked?'checked':''} onchange="toggleSelectAll(${JSON.stringify(filtered.map(l=>l.id))})"
+          style="width:16px;height:16px;cursor:pointer;accent-color:var(--accent)">
+        <span style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.07em">Company / Contact</span>
+        <span style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.07em">Stage</span>
+        <span style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.07em">Rep</span>
+        <span style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.07em">Last Touch</span>
+        <span style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.07em">Notes</span>
+      </div>
+
+      <!-- Rows -->
+      ${filtered.map(l => {
+        const sc = STATUS_CFG[l.status]||STATUS_CFG.new;
+        const c = repColor(l.rep||"");
+        const checked = reviewSelected.has(l.id);
+        const stale = isStale(l);
+        const lastAction = (l.activity||[]).filter(a=>a.type==="note"||a.type==="contact").slice(-1)[0];
+        const lastTs = l.last_contact_date ? fmtDate(l.last_contact_date) : (lastAction?.ts || "—");
+        let daysSince = null;
+        if (l.last_contact_date) daysSince = Math.floor((Date.now()-parseDate(l.last_contact_date))/86400000);
+        else if (lastAction?.ts) { const p=new Date(lastAction.ts+" "+new Date().getFullYear()).getTime(); if(!isNaN(p)) daysSince=Math.floor((Date.now()-p)/86400000); }
+        const lastNote = (l.activity||[]).filter(a=>a.type==="note"||a.type==="contact").slice(-1)[0];
+        const statusOpts = STATUSES.map(s=>`<option value="${s}"${l.status===s?" selected":""}>${STATUS_CFG[s].label}</option>`).join("");
+
+        return `<div style="display:grid;grid-template-columns:36px 1fr 140px 120px 110px 90px;align-items:center;padding:13px 16px;border-bottom:0.5px solid var(--border);gap:12px;background:${checked?'rgba(192,96,255,0.08)':stale?'rgba(252,211,77,0.03)':'transparent'};transition:background .1s" onmouseover="if(!${checked})this.style.background='rgba(192,96,255,0.04)'" onmouseout="this.style.background='${checked?'rgba(192,96,255,0.08)':stale?'rgba(252,211,77,0.03)':'transparent'}'">
+          <input type="checkbox" ${checked?'checked':''} onchange="toggleSelectLead('${l.id}')"
+            style="width:16px;height:16px;cursor:pointer;accent-color:var(--accent)">
+          <div onclick="openLead('${l.id}')" style="cursor:pointer;min-width:0">
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">
+              ${stale?`<span style="font-size:9px;background:rgba(252,211,77,0.15);color:#fcd34d;padding:1px 6px;border-radius:4px;font-weight:700;flex-shrink:0">STALE</span>`:''}
+              <span style="font-size:14px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${l.company}</span>
+            </div>
+            <span style="font-size:12px;color:var(--text3)">${l.firstName||""} ${l.lastName||""}</span>
+          </div>
+          <div onclick="event.stopPropagation()">
+            <select onchange="reviewUpdateStage('${l.id}',this.value)"
+              style="font-size:12px;font-weight:600;padding:5px 8px;width:100%;background:${sc.bg};color:${sc.cl};border:1px solid ${sc.cl}33;border-radius:8px;cursor:pointer;font-family:'DM Sans',sans-serif">
+              ${statusOpts}
+            </select>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px">
+            ${repAvatar(l.rep||"", 18)}
+            <span style="font-size:12px;font-weight:600;color:${c.text}">${l.rep||"—"}</span>
+          </div>
+          <div>
+            <div style="font-size:12px;color:${daysSince!==null&&daysSince>30?'#fca5a5':'var(--text3)'}">
+              ${daysSince!==null?`${daysSince}d ago`:"—"}
+            </div>
+          </div>
+          <div onclick="event.stopPropagation()">
+            <span id="rv-note-display-${l.id}" style="font-size:11px;color:var(--text3);cursor:pointer;padding:3px 6px;border-radius:4px;border:0.5px solid transparent;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:80px"
+              onmouseover="this.style.borderColor='var(--border2)'" onmouseout="this.style.borderColor='transparent'"
+              onclick="openReviewNote('${l.id}',this)">${lastNote?'📝 note':'+ note'}</span>
+            <div id="rv-note-wrap-${l.id}" style="display:none;position:absolute;z-index:100;background:var(--bg2);border:1px solid var(--accent);border-radius:var(--radius);padding:8px;box-shadow:var(--shadow-lg);width:260px">
+              <input id="rv-note-${l.id}" placeholder="Add note..." style="font-size:12px;padding:6px 10px;margin-bottom:6px">
+              <div style="display:flex;gap:6px">
+                <button onclick="saveReviewNote('${l.id}')" style="font-family:'DM Sans',sans-serif;font-size:12px;font-weight:700;padding:5px 12px;border-radius:6px;border:none;background:var(--accent);color:#fff;cursor:pointer;flex:1">Save</button>
+                <button onclick="closeReviewNote('${l.id}')" style="font-family:'DM Sans',sans-serif;font-size:11px;padding:5px 8px;border-radius:6px;border:0.5px solid var(--border2);background:transparent;color:var(--text3);cursor:pointer">✕</button>
+              </div>
+            </div>
+          </div>
+        </div>`;
+      }).join("")}
+    </div>`}`;
+}
+
+function toggleSelectAll(ids) {
+  const allSelected = ids.every(id => reviewSelected.has(id));
+  if (allSelected) ids.forEach(id => reviewSelected.delete(id));
+  else ids.forEach(id => reviewSelected.add(id));
+  renderReview();
+}
+function toggleSelectLead(id) {
+  if (reviewSelected.has(id)) reviewSelected.delete(id);
+  else reviewSelected.add(id);
+  renderReview();
+}
+async function bulkUpdateStage(newStatus) {
+  if (!reviewSelected.size) return;
+  const label = STATUS_CFG[newStatus]?.label;
+  if (!confirm(`Move ${reviewSelected.size} leads to "${label}"?`)) return;
+  const toUpdate = leads.filter(l => reviewSelected.has(l.id));
+  for (const lead of toUpdate) {
+    const old = STATUS_CFG[lead.status]?.label;
+    lead.status = newStatus;
+    addActivity(lead, "status", `Stage changed: ${old} → ${label}`);
+    await dbSaveLead(lead);
+  }
+  reviewSelected = new Set();
+  render();
+  showToast(`✓ ${toUpdate.length} leads moved to ${label}`, false, true);
+}
+async function reviewUpdateStage(id, newStatus) {
+  const lead = leads.find(l => l.id === id); if (!lead) return;
+  const old = STATUS_CFG[lead.status]?.label;
+  lead.status = newStatus;
+  addActivity(lead, "status", `Stage changed: ${old} → ${STATUS_CFG[newStatus].label}`);
+  await dbSaveLead(lead);
+  render();
+}
+function openReviewNote(id, el) {
+  // Close any other open note popups
+  document.querySelectorAll('[id^="rv-note-wrap-"]').forEach(w => { if (w.id !== "rv-note-wrap-"+id) w.style.display="none"; });
+  const wrap = document.getElementById("rv-note-wrap-"+id);
+  if (!wrap) return;
+  const open = wrap.style.display === "none";
+  // Position relative to the display element
+  if (open) {
+    wrap.style.display = "block";
+    setTimeout(() => document.getElementById("rv-note-"+id)?.focus(), 50);
+  } else {
+    wrap.style.display = "none";
+  }
+}
+function closeReviewNote(id) {
+  const wrap = document.getElementById("rv-note-wrap-"+id);
+  if (wrap) wrap.style.display = "none";
+}
+async function saveReviewNote(id) {
+  const inp = document.getElementById("rv-note-"+id);
+  const text = inp?.value.trim(); if (!text) return closeReviewNote(id);
+  const lead = leads.find(l => l.id === id); if (!lead) return;
+  addActivity(lead, "note", text);
+  lead.last_contact_date = today();
+  await dbSaveLead(lead);
+  closeReviewNote(id);
+  render();
+  showToast("✓ Note saved", false, true);
+}
 let samplesTab = "in_progress"; // "in_progress" | "awaiting_feedback"
 let samplesRepFilter = "";
 
