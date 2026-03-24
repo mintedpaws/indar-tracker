@@ -325,7 +325,7 @@ tr:hover td{background:rgba(192,96,255,0.07)!important}
         <span class="search-icon">⌕</span>
         <input id="global-search" placeholder="Search leads..." oninput="onSearch()">
       </div>
-      <button class="btn btn-ghost btn-sm" onclick="openImportModal()" title="Import CSV" style="font-size:18px;padding:4px 8px;opacity:.7">⚙</button>
+      <button class="btn btn-ghost btn-sm" onclick="openSettingsModal()" title="Settings" style="font-size:18px;padding:4px 8px;opacity:.7">⚙</button>
       <div class="user-badge" id="user-badge" title="Sign out" onclick="logout()">?</div>
     </div>
   </div>
@@ -471,6 +471,29 @@ tr:hover td{background:rgba(192,96,255,0.07)!important}
   </div>
 </div>
 
+<!-- SETTINGS MODAL -->
+<div class="modal-overlay" id="settings-modal">
+  <div class="modal" style="max-width:620px">
+    <div class="modal-header">
+      <div><h2>⚙ Settings</h2><p>Import, deleted leads, and more</p></div>
+      <button class="btn btn-ghost btn-sm" onclick="closeSettingsModal()">✕</button>
+    </div>
+    <div class="modal-body" style="padding:0">
+      <div class="modal-tabs" style="margin:1rem 1.5rem 0;margin-bottom:0">
+        <button class="modal-tab on" onclick="switchSettingsTab(this,'stab-import')">📥 Import CSV</button>
+        <button class="modal-tab" onclick="switchSettingsTab(this,'stab-deleted');loadDeletedLeads()">🗑 Recently Deleted</button>
+      </div>
+      <div id="stab-import" style="padding:1.5rem">
+        <div id="import-body"></div>
+      </div>
+      <div id="stab-deleted" style="display:none;padding:1.5rem">
+        <div id="deleted-body"><p style="font-size:13px;color:var(--text3)">Loading...</p></div>
+      </div>
+    </div>
+    <div class="modal-footer" id="import-footer"></div>
+  </div>
+</div>
+
 <!-- DETAIL MODAL -->
 <div class="modal-overlay" id="detail-modal">
   <div class="modal">
@@ -549,8 +572,25 @@ async function dbSaveLead(lead) {
   if (error) { showToast("Save failed: "+error.message,true); throw error; }
 }
 async function dbDeleteLead(id) {
+  const lead = leads.find(l => l.id === id);
+  if (lead) {
+    // Save to deleted_leads log before removing
+    await sb.from("deleted_leads").upsert({
+      id: lead.id,
+      lead_data: leadToDb(lead),
+      deleted_at: new Date().toISOString(),
+      deleted_by: currentUser || "me"
+    });
+  }
   const {error} = await sb.from("leads").delete().eq("id",id);
   if (error) { showToast("Delete failed: "+error.message,true); throw error; }
+}
+async function dbRestoreLead(deletedRow) {
+  const lead = dbToLead(deletedRow.lead_data);
+  const {error} = await sb.from("leads").upsert(leadToDb(lead));
+  if (error) { showToast("Restore failed: "+error.message,true); throw error; }
+  await sb.from("deleted_leads").delete().eq("id", deletedRow.id);
+  leads.unshift(lead);
 }
 async function dbAddRep(name) {
   const {error} = await sb.from("reps").insert({name});
@@ -1740,9 +1780,78 @@ async function addLead() {
   showToast("✓ Lead added",false,true);
 }
 
+// ---- SETTINGS MODAL ----
+function openSettingsModal() {
+  resetImportModal();
+  document.getElementById("settings-modal").classList.add("on");
+  // Reset to import tab
+  document.querySelectorAll("#settings-modal .modal-tab").forEach((b,i) => b.classList.toggle("on", i===0));
+  document.getElementById("stab-import").style.display = "block";
+  document.getElementById("stab-deleted").style.display = "none";
+}
+function closeSettingsModal() {
+  document.getElementById("settings-modal").classList.remove("on");
+}
+function switchSettingsTab(btn, tabId) {
+  document.querySelectorAll("#settings-modal .modal-tab").forEach(b => b.classList.remove("on"));
+  btn.classList.add("on");
+  ["stab-import","stab-deleted"].forEach(t => {
+    const el = document.getElementById(t);
+    if (el) el.style.display = t === tabId ? "block" : "none";
+  });
+}
+async function loadDeletedLeads() {
+  const el = document.getElementById("deleted-body"); if (!el) return;
+  el.innerHTML = `<p style="font-size:13px;color:var(--text3)">Loading...</p>`;
+  const {data, error} = await sb.from("deleted_leads").select("*").order("deleted_at", {ascending:false}).limit(50);
+  if (error) { el.innerHTML=`<p style="color:#fca5a5;font-size:13px">Failed to load: ${error.message}</p>`; return; }
+  if (!data?.length) {
+    el.innerHTML=`<div style="text-align:center;padding:2rem">
+      <div style="font-size:32px;margin-bottom:12px">🗑</div>
+      <p style="font-size:14px;font-weight:600;color:#fff;margin-bottom:6px">No deleted leads</p>
+      <p style="font-size:12px;color:var(--text3)">Deleted leads will appear here for 30 days.</p>
+    </div>`; return;
+  }
+  el.innerHTML = `
+    <p style="font-size:12px;color:var(--text3);margin-bottom:1rem">Last 50 deleted leads · click Restore to recover a lead</p>
+    ${data.map(row => {
+      const d = row.lead_data || {};
+      const sc = STATUS_CFG[d.status] || STATUS_CFG.new;
+      const deletedAt = new Date(row.deleted_at).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric",hour:"numeric",minute:"2-digit"});
+      const c = repColor(d.rep||"");
+      return `<div style="display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:0.5px solid var(--border)">
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap">
+            <span style="font-size:14px;font-weight:700;color:#fff">${d.company||"Unknown"}</span>
+            ${d.first_name||d.last_name?`<span style="font-size:12px;color:var(--text3)">${d.first_name||""} ${d.last_name||""}</span>`:""}
+            <span class="sbadge" style="background:${sc.bg};color:${sc.cl};font-size:9px">${sc.label}</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;font-size:11px;color:var(--text3);flex-wrap:wrap">
+            ${d.rep?`<span style="color:${c.text};font-weight:600">${d.rep}</span>`:""}
+            ${d.vertical?`<span>${d.vertical}</span>`:""}
+            <span>Deleted ${deletedAt} by ${row.deleted_by||"unknown"}</span>
+          </div>
+        </div>
+        <button onclick="restoreLead('${row.id}')"
+          style="font-family:'DM Sans',sans-serif;font-size:12px;font-weight:700;padding:7px 16px;border-radius:8px;border:1.5px solid rgba(134,239,172,0.4);background:rgba(34,197,94,0.1);color:#86efac;cursor:pointer;white-space:nowrap;flex-shrink:0;transition:all .15s"
+          onmouseover="this.style.background='rgba(34,197,94,0.2)'" onmouseout="this.style.background='rgba(34,197,94,0.1)'">
+          ↩ Restore
+        </button>
+      </div>`;
+    }).join("")}`;
+}
+async function restoreLead(deletedId) {
+  const {data, error} = await sb.from("deleted_leads").select("*").eq("id", deletedId).single();
+  if (error||!data) { showToast("Couldn't find deleted lead", true); return; }
+  await dbRestoreLead(data);
+  render();
+  showToast("✓ Lead restored", false, true);
+  loadDeletedLeads(); // refresh the list
+}
+
 // ---- CSV IMPORT ----
-function openImportModal(){resetImportModal();document.getElementById("import-modal").classList.add("on");}
-function closeImportModal(){document.getElementById("import-modal").classList.remove("on");}
+function openImportModal(){openSettingsModal();}
+function closeImportModal(){closeSettingsModal();}
 function resetImportModal() {
   document.getElementById("import-body").innerHTML=`
     <div class="import-drop" id="import-drop" onclick="document.getElementById('csv-file').click()" ondragover="dropOver(event)" ondragleave="dropLeave(event)" ondrop="dropFile(event)">
@@ -2285,8 +2394,9 @@ async function moveSampleStage(id, newStatus) {
   showToast(msg, false, true);
 }
 
-["add-modal","detail-modal","import-modal"].forEach(id=>{
-  document.getElementById(id).addEventListener("click",e=>{if(e.target===document.getElementById(id))document.getElementById(id).classList.remove("on");});
+["add-modal","detail-modal","import-modal","settings-modal"].forEach(id=>{
+  const el = document.getElementById(id); if(!el) return;
+  el.addEventListener("click",e=>{if(e.target===el)el.classList.remove("on");});
 });
 </script>
 </body>
