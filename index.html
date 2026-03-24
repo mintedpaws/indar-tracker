@@ -1715,103 +1715,124 @@ function renderSamples() {
   const current = samplesTab === "in_progress" ? inProgress : awaitingFeedback;
   const filtered = samplesRepFilter ? current.filter(l => l.rep === samplesRepFilter) : current;
 
-  // Rep filter pills
+  // Rep filter pills — only show reps with leads in either bucket
   const allSampleLeads = [...inProgress, ...awaitingFeedback];
-  const repCounts = {};
-  reps.forEach(r => { repCounts[r] = allSampleLeads.filter(l => l.rep === r).length; });
-  const repPills = reps.filter(r => repCounts[r] > 0).map(r => {
+  const activeReps = reps.filter(r => allSampleLeads.some(l => l.rep === r));
+  const repPills = activeReps.map(r => {
     const c = repColor(r);
+    const on = samplesRepFilter === r;
     return `<button onclick="samplesRepFilter=samplesRepFilter==='${r}'?'':'${r}';renderSamples()"
-      style="font-family:'DM Sans',sans-serif;font-size:12px;padding:5px 14px;border-radius:20px;border:0.5px solid ${samplesRepFilter===r?c.border:'var(--border2)'};background:${samplesRepFilter===r?c.bg:'transparent'};color:${samplesRepFilter===r?c.text:'var(--text3)'};cursor:pointer;font-weight:600;display:inline-flex;align-items:center;gap:6px">
+      style="font-family:'DM Sans',sans-serif;font-size:12px;padding:5px 14px;border-radius:20px;border:0.5px solid ${on?c.border:'var(--border2)'};background:${on?c.bg:'transparent'};color:${on?c.text:'var(--text3)'};cursor:pointer;font-weight:600;display:inline-flex;align-items:center;gap:6px;transition:all .15s">
       ${repAvatar(r,16)}${r}</button>`;
   }).join("");
+
+  function urgency(days) {
+    if (days === null) return {color:'var(--text3)', border:'var(--border)', label:''};
+    if (days > 7)  return {color:'#fca5a5', border:'rgba(239,68,68,0.5)',  label:`${days}d`};
+    if (days >= 4) return {color:'#fcd34d', border:'rgba(252,211,77,0.5)', label:`${days}d`};
+    return           {color:'#86efac', border:'rgba(34,197,94,0.5)',  label:`${days}d`};
+  }
 
   function stageCard(l) {
     const isProgress = l.status === "samples_progress";
     const days = daysInStage(l);
-    const daysColor = days === null ? "var(--text3)" : days > 7 ? "#fca5a5" : days > 3 ? "#fcd34d" : "#86efac";
+    const u = urgency(days);
     const lastNote = (l.activity||[]).filter(a => a.type==="note"||a.type==="contact").slice(-1)[0];
     const c = repColor(l.rep||"");
-    return `<div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);margin-bottom:10px;overflow:hidden;transition:border-color .15s" onmouseover="this.style.borderColor='var(--border2)'" onmouseout="this.style.borderColor='var(--border)'">
+    return `<div style="background:var(--bg2);border:1px solid var(--border);border-left:3px solid ${u.border};border-radius:var(--radius-lg);margin-bottom:8px;overflow:hidden;transition:border-color .15s" onmouseover="this.style.borderColor='var(--border2)';this.style.borderLeftColor='${u.border}'" onmouseout="this.style.borderColor='var(--border)';this.style.borderLeftColor='${u.border}'">
 
-      <!-- Card header -->
-      <div style="display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:0.5px solid var(--border);cursor:pointer" onclick="openLead('${l.id}')">
-        <div style="flex:1;min-width:0">
-          <span style="font-size:15px;font-weight:700;color:#fff">${l.company||""}</span>
-          ${l.firstName||l.lastName?`<span style="font-size:12px;color:var(--text3);margin-left:8px">${l.firstName||""} ${l.lastName||""}</span>`:""}
-          ${l.vertical?`<span style="font-size:11px;font-family:'DM Mono',monospace;color:var(--text3);margin-left:8px">${l.vertical}</span>`:""}
+      <!-- Single-line header -->
+      <div style="display:flex;align-items:center;gap:10px;padding:11px 14px;cursor:pointer" onclick="openLead('${l.id}')">
+        <div style="flex:1;min-width:0;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <span style="font-size:14px;font-weight:700;color:#fff;white-space:nowrap">${l.company||""}</span>
+          ${l.firstName||l.lastName?`<span style="font-size:12px;color:var(--text3);white-space:nowrap">${l.firstName||""} ${l.lastName||""}</span>`:""}
+          ${l.vertical?`<span style="font-size:10px;font-family:'DM Mono',monospace;color:var(--text3);background:var(--bg3);padding:2px 7px;border-radius:4px;white-space:nowrap">${l.vertical}</span>`:""}
+          ${lastNote?`<span style="font-size:11px;color:var(--text3);font-style:italic;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:340px">"${lastNote.text.slice(0,70)}${lastNote.text.length>70?"…":""}"</span>`:`<span style="font-size:11px;color:rgba(255,255,255,0.2);font-style:italic">no notes yet</span>`}
         </div>
-        <div style="display:flex;align-items:center;gap:10px;flex-shrink:0">
+        <div style="display:flex;align-items:center;gap:8px;flex-shrink:0" onclick="event.stopPropagation()">
           ${repAvatar(l.rep, 20)}
           <span style="font-size:12px;font-weight:600;color:${c.text}">${l.rep||"—"}</span>
-          ${days !== null ? `<span style="font-size:11px;font-family:'DM Mono',monospace;color:${daysColor};background:${daysColor==='#fca5a5'?'rgba(239,68,68,0.1)':daysColor==='#fcd34d'?'rgba(252,211,77,0.1)':'rgba(34,197,94,0.08)'};padding:3px 10px;border-radius:20px;font-weight:600">${days}d</span>` : ""}
+          ${u.label?`<span style="font-size:11px;font-family:'DM Mono',monospace;font-weight:700;color:${u.color};background:${u.color==='#fca5a5'?'rgba(239,68,68,0.12)':u.color==='#fcd34d'?'rgba(252,211,77,0.12)':'rgba(34,197,94,0.1)'};padding:3px 9px;border-radius:20px;min-width:36px;text-align:center">${u.label}</span>`:''}
+          <div style="display:flex;align-items:center;gap:5px">
+            <span id="samp-note-toggle-${l.id}" style="font-size:11px;color:var(--text3);cursor:pointer;padding:4px 8px;border-radius:5px;border:0.5px solid transparent;white-space:nowrap;transition:all .15s"
+              onmouseover="this.style.borderColor='var(--border2)';this.style.color='var(--text2)'" onmouseout="this.style.borderColor='transparent';this.style.color='var(--text3)'"
+              onclick="toggleSampNoteInput('${l.id}')">+ note</span>
+            ${isProgress
+              ? `<button onclick="moveSampleStage('${l.id}','samples_sent')" style="font-family:'DM Sans',sans-serif;font-size:11px;font-weight:600;padding:4px 11px;border-radius:6px;border:0.5px solid rgba(249,168,212,0.4);background:rgba(236,72,153,0.1);color:#f9a8d4;cursor:pointer;white-space:nowrap;transition:all .15s" onmouseover="this.style.background='rgba(236,72,153,0.2)'" onmouseout="this.style.background='rgba(236,72,153,0.1)'">📦 Sent →</button>`
+              : `<button onclick="moveSampleStage('${l.id}','proofing')" style="font-family:'DM Sans',sans-serif;font-size:11px;font-weight:600;padding:4px 11px;border-radius:6px;border:0.5px solid rgba(253,186,116,0.4);background:rgba(251,146,60,0.1);color:#fdba74;cursor:pointer;white-space:nowrap;transition:all .15s" onmouseover="this.style.background='rgba(251,146,60,0.2)'" onmouseout="this.style.background='rgba(251,146,60,0.1)'">✓ Proofing →</button>`
+            }
+          </div>
         </div>
       </div>
 
-      <!-- Last note -->
-      <div style="padding:10px 14px;border-bottom:0.5px solid var(--border);font-size:12px;color:${lastNote?'var(--text3)':'rgba(255,255,255,0.2)'};font-style:${lastNote?'italic':'normal'}">
-        ${lastNote?`"${lastNote.text.slice(0,100)}${lastNote.text.length>100?"…":""}"`:`<span style="color:var(--text3)">No notes yet — add one below</span>`}
-      </div>
-
-      <!-- Actions -->
-      <div style="display:flex;align-items:center;gap:8px;padding:10px 14px;flex-wrap:wrap">
-        <input id="samp-note-${l.id}" placeholder="Add a note..." style="flex:1;min-width:140px;font-size:12px;padding:6px 10px;background:var(--bg3);border:0.5px solid var(--border2);border-radius:6px;color:var(--text)"
-          onkeydown="if(event.key==='Enter')saveSampleNote('${l.id}')">
-        <button onclick="saveSampleNote('${l.id}')" style="font-family:'DM Sans',sans-serif;font-size:11px;padding:5px 11px;border-radius:6px;border:0.5px solid var(--border2);background:var(--bg3);color:var(--text2);cursor:pointer">Note</button>
-        ${isProgress
-          ? `<button onclick="moveSampleStage('${l.id}','samples_sent')" style="font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;padding:6px 14px;border-radius:8px;border:1.5px solid rgba(249,168,212,0.4);background:rgba(236,72,153,0.1);color:#f9a8d4;cursor:pointer;white-space:nowrap">📦 Samples Sent →</button>`
-          : `<button onclick="moveSampleStage('${l.id}','proofing')" style="font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;padding:6px 14px;border-radius:8px;border:1.5px solid rgba(253,186,116,0.4);background:rgba(251,146,60,0.1);color:#fdba74;cursor:pointer;white-space:nowrap">✓ Feedback In → Proofing</button>`
-        }
-        <button onclick="openLead('${l.id}')" style="font-family:'DM Sans',sans-serif;font-size:11px;padding:5px 10px;border-radius:6px;border:0.5px solid var(--border2);background:transparent;color:var(--text3);cursor:pointer">View</button>
+      <!-- Collapsible note input -->
+      <div id="samp-note-wrap-${l.id}" style="display:none;padding:0 14px 10px;border-top:0.5px solid var(--border)">
+        <div style="display:flex;gap:6px;margin-top:10px;align-items:center">
+          <input id="samp-note-${l.id}" placeholder="Add a note..." style="flex:1;font-size:12px;padding:6px 10px;background:var(--bg3);border:0.5px solid var(--border2);border-radius:6px;color:var(--text)"
+            onkeydown="if(event.key==='Enter')saveSampleNote('${l.id}');if(event.key==='Escape')toggleSampNoteInput('${l.id}')">
+          <button onclick="saveSampleNote('${l.id}')" style="font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;padding:6px 14px;border-radius:6px;border:none;background:var(--accent);color:#fff;cursor:pointer">Save</button>
+          <button onclick="toggleSampNoteInput('${l.id}')" style="font-family:'DM Sans',sans-serif;font-size:11px;padding:6px 8px;border-radius:6px;border:0.5px solid var(--border2);background:transparent;color:var(--text3);cursor:pointer">✕</button>
+        </div>
       </div>
     </div>`;
   }
 
+  const sorted = filtered.slice().sort((a,b)=>{const da=daysInStage(a)||0,db=daysInStage(b)||0;return db-da;});
+  const overdue = filtered.filter(l=>{const d=daysInStage(l);return d!==null&&d>7;}).length;
+  const watch   = filtered.filter(l=>{const d=daysInStage(l);return d!==null&&d>=4&&d<=7;}).length;
+  const fresh   = filtered.filter(l=>{const d=daysInStage(l);return d!==null&&d<=3;}).length;
+
   el.innerHTML = `
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;flex-wrap:wrap;gap:10px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:10px">
       <div>
-        <h2 style="font-size:18px;font-weight:700;color:#fff;margin-bottom:4px">🧪 Sample Tracker</h2>
-        <p style="font-size:12px;color:var(--text3)">Track every lead with samples in motion</p>
+        <h2 style="font-size:18px;font-weight:700;color:#fff;margin-bottom:3px">🧪 Sample Tracker</h2>
+        <p style="font-size:12px;color:var(--text3)">Sorted oldest → newest · left border = urgency</p>
       </div>
-      <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
-        ${repPills}
-      </div>
+      <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">${repPills}</div>
     </div>
 
     <!-- Sub-tabs -->
-    <div style="display:flex;gap:0;margin-bottom:1.25rem;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:4px;width:fit-content">
+    <div style="display:flex;gap:4px;margin-bottom:1rem;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:4px;width:fit-content">
       <button onclick="samplesTab='in_progress';renderSamples()"
-        style="font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;padding:8px 20px;border-radius:10px;border:none;cursor:pointer;transition:all .15s;background:${samplesTab==='in_progress'?'var(--samples-p-bg)':'transparent'};color:${samplesTab==='in_progress'?'#d8b4fe':'var(--text3)'}">
-        🔨 In Progress <span style="font-size:11px;font-family:'DM Mono',monospace;margin-left:4px;opacity:.8">(${inProgress.length})</span>
+        style="font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;padding:7px 18px;border-radius:10px;border:none;cursor:pointer;transition:all .15s;background:${samplesTab==='in_progress'?'var(--samples-p-bg)':'transparent'};color:${samplesTab==='in_progress'?'#d8b4fe':'var(--text3)'}">
+        🔨 In Progress <span style="font-size:11px;font-family:'DM Mono',monospace;opacity:.8;margin-left:4px">(${inProgress.length})</span>
       </button>
       <button onclick="samplesTab='awaiting_feedback';renderSamples()"
-        style="font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;padding:8px 20px;border-radius:10px;border:none;cursor:pointer;transition:all .15s;background:${samplesTab==='awaiting_feedback'?'var(--samples-s-bg)':'transparent'};color:${samplesTab==='awaiting_feedback'?'#f9a8d4':'var(--text3)'}">
-        👀 Awaiting Feedback <span style="font-size:11px;font-family:'DM Mono',monospace;margin-left:4px;opacity:.8">(${awaitingFeedback.length})</span>
+        style="font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;padding:7px 18px;border-radius:10px;border:none;cursor:pointer;transition:all .15s;background:${samplesTab==='awaiting_feedback'?'var(--samples-s-bg)':'transparent'};color:${samplesTab==='awaiting_feedback'?'#f9a8d4':'var(--text3)'}">
+        👀 Awaiting Feedback <span style="font-size:11px;font-family:'DM Mono',monospace;opacity:.8;margin-left:4px">(${awaitingFeedback.length})</span>
       </button>
     </div>
 
-    <!-- Summary bar -->
-    <div style="display:flex;gap:10px;margin-bottom:1.25rem;flex-wrap:wrap">
+    <!-- Compact summary strip -->
+    <div style="display:flex;gap:8px;margin-bottom:1rem;flex-wrap:wrap">
       ${[
-        {label:"Total in bucket", val:filtered.length, color:"var(--text2)"},
-        {label:"Overdue (7+ days)", val:filtered.filter(l=>{const d=daysInStage(l);return d!==null&&d>7;}).length, color:"#fca5a5"},
-        {label:"Watch (4–7 days)", val:filtered.filter(l=>{const d=daysInStage(l);return d!==null&&d>=4&&d<=7;}).length, color:"#fcd34d"},
-        {label:"Fresh (≤3 days)", val:filtered.filter(l=>{const d=daysInStage(l);return d!==null&&d<=3;}).length, color:"#86efac"},
-      ].map(s=>`<div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:10px 18px;display:flex;flex-direction:column;gap:3px">
-        <span style="font-size:18px;font-weight:700;color:${s.color};font-family:'DM Mono',monospace">${s.val}</span>
-        <span style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;font-weight:600">${s.label}</span>
+        {label:"Total", val:filtered.length, color:"var(--text2)"},
+        {label:"🔴 Overdue 7d+", val:overdue, color:"#fca5a5"},
+        {label:"🟡 Watch 4–7d", val:watch,   color:"#fcd34d"},
+        {label:"🟢 Fresh ≤3d",  val:fresh,   color:"#86efac"},
+      ].map(s=>`<div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:8px 16px;display:flex;align-items:center;gap:8px">
+        <span style="font-size:16px;font-weight:700;color:${s.color};font-family:'DM Mono',monospace">${s.val}</span>
+        <span style="font-size:11px;color:var(--text3);font-weight:600">${s.label}</span>
       </div>`).join("")}
     </div>
 
     <!-- Cards -->
-    ${filtered.length === 0
+    ${sorted.length === 0
       ? `<div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:3rem;text-align:center">
           <div style="font-size:32px;margin-bottom:12px">✅</div>
           <p style="font-size:15px;font-weight:600;color:#fff;margin-bottom:6px">Nothing here</p>
           <p style="font-size:13px;color:var(--text3)">No leads in this bucket right now.</p>
         </div>`
-      : filtered.sort((a,b)=>{const da=daysInStage(a)||0,db=daysInStage(b)||0;return db-da;}).map(stageCard).join("")
+      : sorted.map(stageCard).join("")
     }`;
+}
+
+function toggleSampNoteInput(id) {
+  const wrap = document.getElementById("samp-note-wrap-"+id);
+  if (!wrap) return;
+  const open = wrap.style.display === "none";
+  wrap.style.display = open ? "block" : "none";
+  if (open) setTimeout(()=>document.getElementById("samp-note-"+id)?.focus(), 50);
 }
 
 async function saveSampleNote(id) {
