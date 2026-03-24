@@ -849,6 +849,89 @@ function renderDashboard() {
       ${thisWeek.length>8?`<p style="font-size:11px;color:var(--text3);margin-top:8px;text-align:center">+${thisWeek.length-8} more</p>`:""}
     </div>
 
+    <!-- STALE LEADS ALERT -->
+    ${(()=>{
+      const thirtyDaysAgo = Date.now() - (30 * 86400000);
+      const stale = leads.filter(l => {
+        if (["dead","closed"].includes(l.status)) return false;
+        // Check last note/contact in activity
+        const lastAction = (l.activity||[]).filter(a => a.type==="note"||a.type==="contact").slice(-1)[0];
+        if (lastAction?.ts) {
+          const parsed = new Date(lastAction.ts + " " + new Date().getFullYear()).getTime();
+          if (!isNaN(parsed) && parsed > thirtyDaysAgo) return false;
+        }
+        // Also check last_contact_date field
+        if (l.last_contact_date) {
+          if (parseDate(l.last_contact_date) > thirtyDaysAgo) return false;
+        }
+        return true;
+      }).sort((a,b) => {
+        // Sort by longest untouched first
+        const lastA = (a.activity||[]).filter(x=>x.type==="note"||x.type==="contact").slice(-1)[0];
+        const lastB = (b.activity||[]).filter(x=>x.type==="note"||x.type==="contact").slice(-1)[0];
+        const tA = lastA ? new Date(lastA.ts+" "+new Date().getFullYear()).getTime() : (parseDate(a.lead_date||a.dateAdded)||0);
+        const tB = lastB ? new Date(lastB.ts+" "+new Date().getFullYear()).getTime() : (parseDate(b.lead_date||b.dateAdded)||0);
+        return tA - tB;
+      });
+
+      if (!stale.length) return `
+        <div style="background:var(--bg2);border:1px solid rgba(134,239,172,0.3);border-radius:var(--radius-lg);padding:1rem 1.25rem;margin-bottom:1.5rem;display:flex;align-items:center;gap:12px;position:relative;overflow:hidden">
+          <div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,#86efac,#34d399);opacity:.6"></div>
+          <span style="font-size:22px">✅</span>
+          <div>
+            <div style="font-size:13px;font-weight:700;color:#86efac">No stale leads</div>
+            <div style="font-size:12px;color:var(--text3)">Every active lead has been touched in the last 30 days.</div>
+          </div>
+        </div>`;
+
+      return `
+        <div style="background:var(--bg2);border:1px solid rgba(252,211,77,0.35);border-radius:var(--radius-lg);margin-bottom:1.5rem;overflow:hidden;position:relative">
+          <div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,#fcd34d,#f59e0b);opacity:.8"></div>
+          <div style="padding:1rem 1.25rem;border-bottom:0.5px solid rgba(252,211,77,0.2);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+            <div style="display:flex;align-items:center;gap:10px">
+              <span style="font-size:18px">⚠️</span>
+              <div>
+                <div style="font-size:13px;font-weight:700;color:#fcd34d">Stale Leads <span style="font-family:'DM Mono',monospace;font-size:12px;background:rgba(252,211,77,0.15);padding:2px 8px;border-radius:10px;margin-left:4px">${stale.length}</span></div>
+                <div style="font-size:11px;color:var(--text3)">No note or contact logged in 30+ days — these need attention</div>
+              </div>
+            </div>
+            <button onclick="showView('list');setFilter('all');listDateStart='';listDateEnd='';document.getElementById('sort-select').value='last_contact';renderList()" 
+              style="font-family:'DM Sans',sans-serif;font-size:11px;padding:5px 12px;border-radius:6px;border:0.5px solid rgba(252,211,77,0.35);background:rgba(252,211,77,0.08);color:#fcd34d;cursor:pointer;font-weight:600">View in list →</button>
+          </div>
+          ${stale.slice(0,8).map(l => {
+            const sc = STATUS_CFG[l.status]||STATUS_CFG.new;
+            const c = repColor(l.rep||"");
+            const lastAction = (l.activity||[]).filter(a=>a.type==="note"||a.type==="contact").slice(-1)[0];
+            const lastTs = lastAction?.ts || (l.last_contact_date ? fmtDate(l.last_contact_date) : null);
+            // Calculate days since last touch
+            let daysSince = null;
+            if (lastAction?.ts) {
+              const p = new Date(lastAction.ts+" "+new Date().getFullYear()).getTime();
+              if (!isNaN(p)) daysSince = Math.floor((Date.now()-p)/86400000);
+            } else if (l.last_contact_date) {
+              daysSince = Math.floor((Date.now()-parseDate(l.last_contact_date))/86400000);
+            }
+            const daysColor = daysSince!==null&&daysSince>60?"#fca5a5":"#fcd34d";
+            return `<div onclick="openLead('${l.id}')" style="display:flex;align-items:center;gap:12px;padding:11px 16px;border-bottom:0.5px solid rgba(252,211,77,0.1);cursor:pointer;transition:background .1s" onmouseover="this.style.background='rgba(252,211,77,0.04)'" onmouseout="this.style.background='transparent'">
+              <div style="flex:1;min-width:0">
+                <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:3px">
+                  <span style="font-size:13px;font-weight:700;color:#fff">${l.company}</span>
+                  ${l.firstName||l.lastName?`<span style="font-size:12px;color:var(--text3)">${l.firstName||""} ${l.lastName||""}</span>`:""}
+                  <span class="sbadge" style="background:${sc.bg};color:${sc.cl};font-size:9px">${sc.label}</span>
+                </div>
+                <div style="font-size:11px;color:var(--text3)">${lastTs?`Last touch: ${lastTs}`:"Never contacted"}</div>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px;flex-shrink:0">
+                ${daysSince!==null?`<span style="font-size:13px;font-weight:700;color:${daysColor};font-family:'DM Mono',monospace;background:${daysSince>60?'rgba(239,68,68,0.1)':'rgba(252,211,77,0.1)'};padding:3px 10px;border-radius:20px">${daysSince}d ago</span>`:`<span style="font-size:11px;color:#fca5a5;font-weight:600">Never</span>`}
+                ${l.rep?`<span style="display:inline-flex;align-items:center;gap:5px">${repAvatar(l.rep,18)}<span style="font-size:12px;color:${c.text};font-weight:600">${l.rep}</span></span>`:""}
+                <button onclick="event.stopPropagation();toggleFlag('${l.id}')" style="font-family:'DM Sans',sans-serif;font-size:11px;font-weight:600;padding:4px 10px;border-radius:6px;border:0.5px solid rgba(252,211,77,0.35);background:${l.flagged?'rgba(252,211,77,0.15)':'transparent'};color:#fcd34d;cursor:pointer;white-space:nowrap">${l.flagged?'🔔 Flagged':'🔔 Flag rep'}</button>
+              </div>
+            </div>`;
+          }).join("")}
+          ${stale.length>8?`<div style="padding:10px 16px;text-align:center;font-size:12px;color:var(--text3);border-top:0.5px solid rgba(252,211,77,0.1)">+${stale.length-8} more stale leads — <span onclick="showView('list');setFilter('all');document.getElementById('sort-select').value='last_contact';renderList()" style="color:#fcd34d;cursor:pointer;font-weight:600">view all in list →</span></div>`:""}
+        </div>`;
+    })()}
+
     ${repStats.length>0?`<div style="margin-bottom:1.5rem">
       <p class="section-label" style="margin-bottom:10px">Reps</p>
       <div class="rep-grid">${repStats.map(r=>`<div class="rep-card" onclick="goToList('all','${r.name}')">
