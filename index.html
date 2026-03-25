@@ -1465,6 +1465,7 @@ function renderKanban() {
             ${l.rep?`<span style="font-size:10px;background:${repColor(l.rep).bg};color:${repColor(l.rep).text};border:0.5px solid ${repColor(l.rep).border};padding:2px 7px;border-radius:6px;font-family:'DM Mono',monospace">${l.rep}</span>`:'<span style="font-size:10px;color:var(--text3)">Unassigned</span>'}
             ${l.followup?`<span class="kcard-followup ${fc}">${fmtDate(l.followup)}</span>`:''}
           </div>
+          ${l.last_contact_date?`<div style="font-size:10px;font-weight:600;color:var(--text3);margin-top:6px;font-family:'DM Mono',monospace">📅 ${fmtDate(l.last_contact_date)}</div>`:""}
           ${lastNote?`<div class="kcard-note">${lastNote.text}</div>`:""}
         </div>`;
       }).join("")}
