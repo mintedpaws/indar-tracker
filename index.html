@@ -1307,7 +1307,7 @@ function renderList() {
     cardList.innerHTML=fil.map(l=>{
       const sc=STATUS_CFG[l.status]||STATUS_CFG.new;
       const c=repColor(l.rep||"");
-      const lastNote=(l.activity||[]).filter(a=>a.type==="note"||a.type==="contact").slice(-1)[0];
+      const lastNote=(l.activity||[]).filter(a=>(a.type==="note"||a.type==="contact")&&a.text&&a.text.trim()!=="+ note"&&a.text.trim()!=="").slice(-1)[0];
       const lcClass=l.last_contact_date&&((new Date().getTime()-parseDate(l.last_contact_date))/86400000)>14?"overdue":"";
       return `<div class="lead-card" onclick="openLead('${l.id}')">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
@@ -1338,9 +1338,7 @@ function renderList() {
   // ---- DESKTOP TABLE ROWS ----
   tbody.innerHTML=fil.map(l=>{
     const sc=STATUS_CFG[l.status]||STATUS_CFG.new;
-    const lastNote=(l.activity||[]).filter(a=>a.type==="note"||a.type==="contact").slice(-1)[0];
-    // Use the activity timestamp if available, else fall back to last_contact_date
-    const noteDate = lastNote ? (lastNote.ts || "") : "";
+    const lastNote=(l.activity||[]).filter(a=>(a.type==="note"||a.type==="contact")&&a.text&&a.text.trim()!=="+ note"&&a.text.trim()!=="").slice(-1)[0];
     const lcClass=l.last_contact_date&&((new Date().getTime()-parseDate(l.last_contact_date))/86400000)>14?"overdue":"";
     const statusOpts=STATUSES.map(s=>`<option value="${s}"${l.status===s?" selected":""}>${STATUS_CFG[s].label}</option>`).join("");
     return `<tr>
@@ -1373,11 +1371,14 @@ function renderList() {
             <button class="btn btn-ghost btn-sm" onclick="closeInlineNote('${l.id}')">✕</button>
           </div>
         </div>
-        <div onclick="event.stopPropagation()" style="display:flex;align-items:center;gap:4px;margin-top:4px">
-          <input type="date" value="${l.last_contact_date||""}" title="Last contact date"
-            style="font-size:10px;padding:2px 5px;width:auto;min-width:100px;color:${l.last_contact_date?(lcClass==="overdue"?"#fca5a5":"var(--text3)"):"var(--text3)"};background:transparent;border-color:transparent;cursor:pointer;font-family:'DM Mono',monospace"
-            onmouseover="this.style.borderColor='var(--border2)'" onmouseout="this.style.borderColor='transparent'"
-            onchange="inlineUpdate('${l.id}','last_contact_date',this.value);this.style.color=this.value?(${lcClass==="overdue"?true:false}?'#fca5a5':'var(--text3)'):'var(--text3)'">
+        <div onclick="event.stopPropagation()" style="display:flex;align-items:center;gap:4px;margin-top:5px">
+          ${l.last_contact_date
+            ? `<span style="font-size:12px;font-weight:700;color:${lcClass==="overdue"?"#fca5a5":"var(--text2)"};font-family:'DM Mono',monospace">📅 ${fmtDate(l.last_contact_date)}</span>`
+            : `<span style="font-size:11px;color:var(--text3)">no contact logged</span>`
+          }
+          <input type="date" value="${l.last_contact_date||""}" title="Edit last contact date"
+            style="font-size:10px;padding:1px 3px;width:18px;opacity:0;cursor:pointer;position:absolute"
+            onchange="inlineUpdate('${l.id}','last_contact_date',this.value);renderList()">
         </div>
       </td>
 
@@ -1456,13 +1457,13 @@ function renderKanban() {
     <div class="kanban-cards" id="kcol-${status}" ondragover="onDragOver(event,'${status}')" ondragleave="onDragLeave(event,'${status}')" ondrop="onDrop(event,'${status}')">
       ${colLeads.map(l=>{
         const fc=fcClass(l.followup);
-        const lastNote=(l.activity||[]).filter(a=>a.type==="note"||a.type==="contact").slice(-1)[0];
+        const lastNote=(l.activity||[]).filter(a=>(a.type==="note"||a.type==="contact")&&a.text&&a.text.trim()!=="+ note"&&a.text.trim()!=="").slice(-1)[0];
         return `<div class="kcard" draggable="true" ondragstart="onDragStart(event,'${l.id}')" onclick="openLead('${l.id}')">
           <div class="kcard-name">${l.firstName||""} ${l.lastName||""}</div>
           <div class="kcard-company">${l.company||""}</div>
           <div class="kcard-meta">
             ${l.rep?`<span style="font-size:10px;background:${repColor(l.rep).bg};color:${repColor(l.rep).text};border:0.5px solid ${repColor(l.rep).border};padding:2px 7px;border-radius:6px;font-family:'DM Mono',monospace">${l.rep}</span>`:'<span style="font-size:10px;color:var(--text3)">Unassigned</span>'}
-            <span class="kcard-followup ${fc}">${l.followup?fmtDate(l.followup):"no date"}</span>
+            ${l.followup?`<span class="kcard-followup ${fc}">${fmtDate(l.followup)}</span>`:''}
           </div>
           ${lastNote?`<div class="kcard-note">${lastNote.text}</div>`:""}
         </div>`;
