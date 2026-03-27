@@ -1371,13 +1371,12 @@ function renderList() {
             <button class="btn btn-ghost btn-sm" onclick="closeInlineNote('${l.id}')">✕</button>
           </div>
         </div>
-        <div onclick="event.stopPropagation()" style="display:flex;align-items:center;gap:4px;margin-top:5px">
-          ${l.last_contact_date
-            ? `<span style="font-size:12px;font-weight:700;color:${lcClass==="overdue"?"#fca5a5":"var(--text2)"};font-family:'DM Mono',monospace">📅 ${fmtDate(l.last_contact_date)}</span>`
-            : `<span style="font-size:11px;color:var(--text3)">no contact logged</span>`
-          }
-          <input type="date" value="${l.last_contact_date||""}" title="Edit last contact date"
-            style="font-size:10px;padding:1px 3px;width:18px;opacity:0;cursor:pointer;position:absolute"
+        <div onclick="event.stopPropagation()" style="display:flex;align-items:center;gap:4px;margin-top:5px;position:relative">
+          <span style="font-size:11px;color:var(--text3);flex-shrink:0">📅</span>
+          <input type="date" value="${l.last_contact_date||""}" title="Last contact date"
+            style="font-size:12px;font-weight:700;padding:2px 4px;width:auto;color:${l.last_contact_date?(lcClass==="overdue"?"#fca5a5":"var(--text2)"):"var(--text3)"};background:transparent;border:0.5px solid transparent;border-radius:4px;cursor:pointer;font-family:'DM Mono',monospace;min-width:90px"
+            onmouseover="this.style.borderColor='var(--border2)';this.style.background='var(--bg3)'"
+            onmouseout="this.style.borderColor='transparent';this.style.background='transparent'"
             onchange="inlineUpdate('${l.id}','last_contact_date',this.value);renderList()">
         </div>
       </td>
