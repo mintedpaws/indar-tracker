@@ -881,9 +881,9 @@ function renderDashboard() {
 
     <div class="dash-grid" style="margin-bottom:1rem;grid-template-columns:repeat(4,1fr)">
       <div class="dash-stat" onclick="goToList('all')"><div class="dash-stat-num">${total}</div><div class="dash-stat-label">Total leads</div><div class="dash-stat-sub">${active} active</div></div>
-      <div class="dash-stat" onclick="goToList('has_invoices')"><div class="dash-stat-num" style="color:#86efac">${closedDeals}</div><div class="dash-stat-label">Closed Deals</div><div class="dash-stat-sub">invoiced${rangeStart?" this period":""}</div></div>
-      <div class="dash-stat" onclick="goToList('has_invoices')"><div class="dash-stat-num" style="color:#a5b4fc">${rangeStart?newCustomers:"—"}</div><div class="dash-stat-label">New Customers</div><div class="dash-stat-sub">${rangeStart?"first invoice this period":"select a date range"}</div></div>
-      <div class="dash-stat" onclick="showView('list');setFilter('estimate_sent');listDateStart='';listDateEnd=''"><div class="dash-stat-num" style="color:#fcd34d">${estimatesOut}</div><div class="dash-stat-label">Estimates Out</div><div class="dash-stat-sub">awaiting decision</div></div>
+      <div class="dash-stat" onclick="filterToInvoiced()"><div class="dash-stat-num" style="color:#86efac">${closedDeals}</div><div class="dash-stat-label">Closed Deals</div><div class="dash-stat-sub">invoiced${rangeStart?" this period":""}</div></div>
+      <div class="dash-stat" onclick="filterToInvoiced()"><div class="dash-stat-num" style="color:#a5b4fc">${rangeStart?newCustomers:"—"}</div><div class="dash-stat-label">New Customers</div><div class="dash-stat-sub">${rangeStart?"first invoice this period":"select a date range"}</div></div>
+      <div class="dash-stat" onclick="filterToEstimates()"><div class="dash-stat-num" style="color:#fcd34d">${estimatesOut}</div><div class="dash-stat-label">Estimates Out</div><div class="dash-stat-sub">awaiting decision</div></div>
     </div>
 
     <div class="followup-widget">
@@ -1401,6 +1401,19 @@ function renderList() {
       </td>
     </tr>`;
   }).join("");
+}
+function filterToInvoiced() {
+  // Always clear date range — invoiced leads were added before the current period
+  listDateStart = ""; listDateEnd = "";
+  filterRep = "";
+  filterStatus = "has_invoices";
+  showView("list");
+}
+function filterToEstimates() {
+  listDateStart = ""; listDateEnd = "";
+  filterRep = "";
+  filterStatus = "estimate_sent";
+  showView("list");
 }
 function setFilter(s){filterStatus=s;listDateStart="";listDateEnd="";renderList();}
 function goToList(filter, rep) {
