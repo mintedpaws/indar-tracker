@@ -816,11 +816,16 @@ function renderDashboard() {
   const totalLTV = leads.reduce((s,l)=>s+(l.invoices||[]).filter(invoiceInRange).reduce((si,inv)=>si+(parseFloat(inv.amount)||0),0),0);
   const newAccounts = leads.filter(l=>(l.invoices||[]).filter(invoiceInRange).length>0).length;
 
-  // New Customers = leads whose very first invoice ever falls within the selected range
+  // New Customers = leads with an invoice in range AND no invoice before the range started
   const newCustomers = leads.filter(l => {
-    const allInvs = (l.invoices||[]).filter(inv => inv.date).sort((a,b) => parseDate(a.date)-parseDate(b.date));
-    if (!allInvs.length) return false;
-    return invoiceInRange(allInvs[0]); // only count if the FIRST invoice is within range
+    const invs = (l.invoices||[]).filter(inv => inv.date);
+    if (!invs.length) return false;
+    const hasInvoiceInRange = invs.some(invoiceInRange);
+    if (!hasInvoiceInRange) return false;
+    if (!rangeStart) return false; // "All time" — skip this stat, not meaningful
+    // Must have NO invoice before the range start
+    const hadPriorInvoice = invs.some(inv => parseDate(inv.date) < parseDate(rangeStart));
+    return !hadPriorInvoice;
   }).length;
   const repStats=reps.map(r=>{
     const rl=leads.filter(l=>l.rep===r);
@@ -871,13 +876,13 @@ function renderDashboard() {
       <div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,#86efac,#34d399)"></div>
       <div style="font-size:11px;font-weight:700;color:#86efac;text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px">💰 Invoice Value</div>
       <div style="font-size:clamp(28px,8vw,48px);font-weight:700;color:#86efac;letter-spacing:-2px;font-family:'DM Mono',monospace;line-height:1">$${totalLTV.toLocaleString()}</div>
-      <div style="font-size:12px;color:rgba(134,239,172,0.6);margin-top:6px">${newAccounts} account${newAccounts!==1?"s":""} invoiced · ${newCustomers} new customer${newCustomers!==1?"s":""} this period</div>
+      <div style="font-size:12px;color:rgba(134,239,172,0.6);margin-top:6px">${newAccounts} account${newAccounts!==1?"s":""} invoiced${rangeStart&&newCustomers>0?` · ${newCustomers} new customer${newCustomers!==1?"s":""}`:""}</div>
     </div>
 
     <div class="dash-grid" style="margin-bottom:1rem;grid-template-columns:repeat(4,1fr)">
       <div class="dash-stat" onclick="goToList('all')"><div class="dash-stat-num">${total}</div><div class="dash-stat-label">Total leads</div><div class="dash-stat-sub">${active} active</div></div>
       <div class="dash-stat" onclick="goToList('has_invoices')"><div class="dash-stat-num" style="color:#86efac">${closedDeals}</div><div class="dash-stat-label">Closed Deals</div><div class="dash-stat-sub">invoiced${rangeStart?" this period":""}</div></div>
-      <div class="dash-stat" onclick="goToList('has_invoices')"><div class="dash-stat-num" style="color:#a5b4fc">${newCustomers}</div><div class="dash-stat-label">New Customers</div><div class="dash-stat-sub">first invoice${rangeStart?" this period":""}</div></div>
+      <div class="dash-stat" onclick="goToList('has_invoices')"><div class="dash-stat-num" style="color:#a5b4fc">${rangeStart?newCustomers:"—"}</div><div class="dash-stat-label">New Customers</div><div class="dash-stat-sub">${rangeStart?"first invoice this period":"select a date range"}</div></div>
       <div class="dash-stat" onclick="showView('list');setFilter('estimate_sent');listDateStart='';listDateEnd=''"><div class="dash-stat-num" style="color:#fcd34d">${estimatesOut}</div><div class="dash-stat-label">Estimates Out</div><div class="dash-stat-sub">awaiting decision</div></div>
     </div>
 
