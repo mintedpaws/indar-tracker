@@ -1648,6 +1648,25 @@ function renderDetailBody(l) {
       </div>
 
       <div style="border-top:0.5px solid var(--border);padding-top:14px;margin-bottom:14px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+          <p class="section-label">Recent Notes</p>
+          <button onclick="switchTab(document.querySelectorAll('.modal-tab')[1],'dtab-timeline')" style="font-family:'DM Sans',sans-serif;font-size:11px;padding:3px 10px;border-radius:6px;border:0.5px solid var(--border2);background:transparent;color:var(--text3);cursor:pointer">View all →</button>
+        </div>
+        ${(()=>{
+          const notes = (l.activity||[]).filter(a => a.type==="note"||a.type==="contact").slice(-5).reverse();
+          if (!notes.length) return `<p style="font-size:12px;color:var(--text3);font-style:italic">No notes yet.</p>`;
+          return notes.map((n,i) => `
+            <div style="display:flex;gap:10px;align-items:flex-start;${i>0?'margin-top:10px;padding-top:10px;border-top:0.5px solid var(--border)':''}">
+              <div style="width:28px;height:28px;border-radius:50%;background:${n.type==='contact'?'rgba(34,197,94,.12)':'var(--bg3)'};border:1px solid ${n.type==='contact'?'rgba(34,197,94,.4)':'var(--border2)'};display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0;color:${n.type==='contact'?'#86efac':'var(--text3)'}">${n.type==='contact'?'📞':'·'}</div>
+              <div style="flex:1;min-width:0">
+                <div style="font-size:13px;color:var(--text2);line-height:1.5;margin-bottom:3px">${n.text}</div>
+                <div style="font-size:10px;color:var(--text3);font-family:'DM Mono',monospace">${n.ts||''}</div>
+              </div>
+            </div>`).join("");
+        })()}
+      </div>
+
+      <div style="border-top:0.5px solid var(--border);padding-top:14px;margin-bottom:14px">
         <p class="section-label" style="margin-bottom:10px">Deal Notes</p>
         <div class="fg" style="margin-bottom:14px"><textarea id="e-deal_notes" rows="3" style="width:100%;font-family:'DM Sans',sans-serif;font-size:13px;resize:vertical">${l.deal_notes||""}</textarea></div>
         <button class="btn btn-accent btn-sm" id="save-edit-btn" onclick="saveEdit()">Save notes</button>
@@ -1677,13 +1696,15 @@ function renderDetailBody(l) {
     </div>
 
     <div id="dtab-timeline" style="display:none">
-      <div class="timeline" style="margin-bottom:1.5rem">${timeline}</div>
-      <div style="border-top:0.5px solid var(--border);padding-top:1rem">
-        <div style="display:flex;gap:8px">
+      <!-- Quick add at top -->
+      <div style="margin-bottom:1.25rem;background:var(--bg3);border-radius:var(--radius);padding:12px;border:0.5px solid var(--border2)">
+        <div style="display:flex;gap:8px;align-items:center">
           <input id="comment-input" placeholder="Add a note..." style="flex:1">
-          <button class="btn btn-sm btn-accent" onclick="submitComment()" style="padding:7px 14px">Add</button>
+          <button class="btn btn-sm btn-accent" onclick="submitComment()" style="padding:7px 14px;white-space:nowrap">+ Add</button>
         </div>
       </div>
+      <!-- Timeline -->
+      <div class="timeline" style="margin-bottom:1rem">${timeline}</div>
     </div>`;
 }
 
