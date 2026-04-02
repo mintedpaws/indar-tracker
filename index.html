@@ -316,6 +316,7 @@ tr:hover td{background:rgba(192,96,255,0.07)!important}
       <button class="nav-btn" onclick="showView('followup')" style="color:#fcd34d">Rep Follow Up</button>
       <button class="nav-btn" onclick="showView('samples')" style="color:#f9a8d4">🧪 Samples</button>
       <button class="nav-btn" onclick="showView('review')" style="color:#86efac">🎯 Review Mode</button>
+      <button class="nav-btn" onclick="showView('activity')" style="color:#e090ff">⚡ Activity</button>
     </nav>
     <div class="topbar-center">
       <button class="btn btn-accent" onclick="openAddLead()" style="padding:10px 32px;font-size:15px;font-weight:700">+ Add lead</button>
@@ -380,6 +381,7 @@ tr:hover td{background:rgba(192,96,255,0.07)!important}
     <div class="panel" id="panel-followup"><div class="dashboard" id="followup-content"></div></div>
     <div class="panel" id="panel-samples"><div class="dashboard" id="samples-content"></div></div>
     <div class="panel" id="panel-review"><div class="dashboard" id="review-content"></div></div>
+    <div class="panel" id="panel-activity"><div class="dashboard" id="activity-content"></div></div>
     <div class="panel" id="panel-kanban">
       <div class="kanban-wrap">
         <div class="kanban-toolbar">
@@ -753,13 +755,14 @@ function showView(name) {
   document.querySelectorAll(".panel").forEach(p=>p.classList.remove("on"));
   document.querySelectorAll(".nav-btn").forEach(b=>b.classList.remove("on"));
   document.getElementById("panel-"+name).classList.add("on");
-  [{k:"dashboard",i:0},{k:"kanban",i:1},{k:"list",i:2},{k:"followup",i:3},{k:"samples",i:4},{k:"review",i:5}].forEach(v=>{if(v.k===name) document.querySelectorAll(".nav-btn")[v.i]?.classList.add("on");});
+  [{k:"dashboard",i:0},{k:"kanban",i:1},{k:"list",i:2},{k:"followup",i:3},{k:"samples",i:4},{k:"review",i:5},{k:"activity",i:6}].forEach(v=>{if(v.k===name) document.querySelectorAll(".nav-btn")[v.i]?.classList.add("on");});
   if (name==="dashboard") renderDashboard();
   if (name==="list") renderList();
   if (name==="kanban") renderKanban();
   if (name==="followup") renderFollowUp();
   if (name==="samples") renderSamples();
   if (name==="review") renderReview();
+  if (name==="activity") renderActivity();
 }
 function onSearch() { searchQ=document.getElementById("global-search").value.toLowerCase(); render(); }
 function render() {
@@ -770,6 +773,7 @@ function render() {
   if (v.id==="panel-followup") renderFollowUp();
   if (v.id==="panel-samples") renderSamples();
   if (v.id==="panel-review") renderReview();
+  if (v.id==="panel-activity") renderActivity();
 }
 
 // ---- DASHBOARD ----
@@ -2019,6 +2023,110 @@ async function doImport() {
   leads=[...newLeads,...leads]; populateRepSelects();
   render(); closeImportModal();
   showToast("✓ "+newLeads.length+" leads imported",false,true);
+}
+
+// ---- ACTIVITY FEED ----
+let activityRepFilter = "";
+let activityTypeFilter = "all"; // all | note | status | contact | created
+
+function renderActivity() {
+  const el = document.getElementById("activity-content");
+
+  // Collect all events across all leads
+  const allEvents = [];
+  leads.forEach(l => {
+    (l.activity||[]).forEach(a => {
+      if (!a.text || a.text.trim() === "+ note" || a.text.trim() === "") return;
+      allEvents.push({...a, leadId:l.id, company:l.company||"", leadName:`${l.firstName||""} ${l.lastName||""}`.trim(), rep:l.rep||"", status:l.status});
+    });
+  });
+
+  // Sort newest first
+  allEvents.sort((a,b) => {
+    const pa = new Date((a.ts||"")+" "+new Date().getFullYear()).getTime()||0;
+    const pb = new Date((b.ts||"")+" "+new Date().getFullYear()).getTime()||0;
+    return pb - pa;
+  });
+
+  // Apply filters
+  let filtered = allEvents;
+  if (activityRepFilter) filtered = filtered.filter(a => a.rep === activityRepFilter);
+  if (activityTypeFilter !== "all") filtered = filtered.filter(a => a.type === activityTypeFilter);
+
+  const typeIcon  = {note:"·", status:"→", contact:"📞", created:"★"};
+  const typeBg    = {note:"var(--bg3)", status:"var(--accent-dim)", contact:"rgba(34,197,94,.12)", created:"rgba(99,102,241,.12)"};
+  const typeCl    = {note:"var(--text3)", status:"var(--accent-bright)", contact:"#86efac", created:"#a5b4fc"};
+  const typeLabel = {note:"Note", status:"Stage change", contact:"Contact logged", created:"Lead created"};
+
+  // Rep pills
+  const activeReps = [...new Set(allEvents.map(a=>a.rep).filter(Boolean))];
+  const repPills = activeReps.map(r => {
+    const c = repColor(r); const on = activityRepFilter===r;
+    return `<button onclick="activityRepFilter=activityRepFilter==='${r}'?'':'${r}';renderActivity()"
+      style="font-family:'DM Sans',sans-serif;font-size:12px;padding:5px 14px;border-radius:20px;border:0.5px solid ${on?c.border:'var(--border2)'};background:${on?c.bg:'transparent'};color:${on?c.text:'var(--text3)'};cursor:pointer;font-weight:600;display:inline-flex;align-items:center;gap:6px;transition:all .15s">
+      ${repAvatar(r,16)}${r}</button>`;
+  }).join("");
+
+  // Type filter pills
+  const typePills = [
+    {k:"all",l:"All"},
+    {k:"note",l:"📝 Notes"},
+    {k:"contact",l:"📞 Contacts"},
+    {k:"status",l:"→ Stage changes"},
+    {k:"created",l:"★ New leads"},
+  ].map(t => {
+    const on = activityTypeFilter===t.k;
+    return `<button onclick="activityTypeFilter='${t.k}';renderActivity()"
+      style="font-family:'DM Sans',sans-serif;font-size:12px;padding:5px 14px;border-radius:20px;border:0.5px solid ${on?'var(--accent-bright)':'var(--border2)'};background:${on?'var(--accent-dim)':'transparent'};color:${on?'#fff':'var(--text3)'};cursor:pointer;font-weight:600;transition:all .15s">${t.l}</button>`;
+  }).join("");
+
+  el.innerHTML = `
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:10px">
+      <div>
+        <h2 style="font-size:18px;font-weight:700;color:#fff;margin-bottom:3px">⚡ Recent Activity</h2>
+        <p style="font-size:12px;color:var(--text3)">All notes, calls, and stage changes across every rep</p>
+      </div>
+      <span style="font-size:12px;color:var(--text3);font-family:'DM Mono',monospace;margin-top:6px">${filtered.length} events</span>
+    </div>
+
+    <!-- Type filters -->
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:1rem">${typePills}</div>
+
+    <!-- Rep filter -->
+    ${activeReps.length ? `<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:1.25rem">
+      <span style="font-size:11px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:.07em">Rep:</span>
+      ${repPills}
+      ${activityRepFilter?`<button onclick="activityRepFilter='';renderActivity()" style="font-family:'DM Sans',sans-serif;font-size:11px;padding:4px 10px;border-radius:20px;border:0.5px solid rgba(239,68,68,.3);background:transparent;color:#fca5a5;cursor:pointer">✕ Clear</button>`:""}
+    </div>` : ""}
+
+    <!-- Feed -->
+    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden">
+      ${filtered.length === 0 ? `<div style="padding:3rem;text-align:center;font-size:13px;color:var(--text3)">No activity found.</div>` :
+        filtered.slice(0,100).map((a,i) => {
+          const c = repColor(a.rep||"");
+          const sc = STATUS_CFG[a.status]||STATUS_CFG.new;
+          return `<div onclick="openLead('${a.leadId}')" style="display:flex;align-items:flex-start;gap:14px;padding:14px 18px;border-bottom:0.5px solid var(--border);cursor:pointer;transition:background .1s" onmouseover="this.style.background='rgba(192,96,255,0.05)'" onmouseout="this.style.background='transparent'">
+            <!-- Type icon -->
+            <div style="width:32px;height:32px;border-radius:50%;background:${typeBg[a.type]||typeBg.note};border:1px solid ${a.type==='contact'?'rgba(34,197,94,.3)':a.type==='status'?'var(--accent)':a.type==='created'?'rgba(99,102,241,.3)':'var(--border2)'};display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;margin-top:1px">${typeIcon[a.type]||"·"}</div>
+            <!-- Content -->
+            <div style="flex:1;min-width:0">
+              <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:5px">
+                <span style="font-size:14px;font-weight:700;color:#fff">${a.company}</span>
+                ${a.leadName?`<span style="font-size:12px;color:var(--text3)">${a.leadName}</span>`:""}
+                <span class="sbadge" style="background:${sc.bg};color:${sc.cl};font-size:9px">${sc.label}</span>
+                <span style="font-size:10px;font-weight:600;color:${typeCl[a.type]||typeCl.note};background:${typeBg[a.type]||typeBg.note};padding:2px 8px;border-radius:10px">${typeLabel[a.type]||"Note"}</span>
+              </div>
+              <div style="font-size:13px;color:var(--text2);line-height:1.5;margin-bottom:6px">${a.text}</div>
+              <div style="display:flex;align-items:center;gap:10px">
+                ${a.rep?`<span style="display:inline-flex;align-items:center;gap:5px">${repAvatar(a.rep,16)}<span style="font-size:11px;color:${c.text};font-weight:600">${a.rep}</span></span>`:""}
+                <span style="font-size:11px;color:var(--text3);font-family:'DM Mono',monospace">${a.ts||""}</span>
+              </div>
+            </div>
+          </div>`;
+        }).join("")
+      }
+      ${filtered.length > 100 ? `<div style="padding:12px;text-align:center;font-size:12px;color:var(--text3);border-top:0.5px solid var(--border)">Showing 100 of ${filtered.length} events</div>` : ""}
+    </div>`;
 }
 
 // ---- REVIEW MODE ----
