@@ -898,9 +898,14 @@ function clearInstantlyKey(){
   updateInstantlyBadge();renderInboxes();
 }
 async function iGet(path){
-  const r=await fetch("https://api.instantly.ai/api/v2"+path,{headers:{"Authorization":"Bearer "+instantlyKey,"Content-Type":"application/json"}});
-  if(!r.ok)throw new Error(r.status+" "+r.statusText);
-  return r.json();
+  // Route through Supabase Edge Function to avoid CORS
+  const{data,error}=await sb.functions.invoke("instantly-proxy",{
+    body:{path},
+    headers:{"x-instantly-key":instantlyKey}
+  });
+  if(error)throw new Error(error.message||"Proxy error");
+  if(data?.error)throw new Error(data.error);
+  return data;
 }
 async function loadInstantlyData(){
   if(!instantlyKey)return;
