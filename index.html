@@ -989,13 +989,24 @@ async function loadInstantlyData(){
 function iActiveData(){return instantlyAccounts.length?instantlyAccounts:inboxesData;}
 function iActiveCamps(){
   if(Object.keys(instantlyCampMap).length){
-    // Build INBOX_CAMPS-style object from live Instantly campaigns
-    const colors=["#D85A30","#EF9F27","#378ADD","#7F77DD","#1D9E75","#639922","#D4537E","#888780"];
-    const bgs=["rgba(216,90,48,0.18)","rgba(239,159,39,0.18)","rgba(55,138,221,0.18)","rgba(127,119,221,0.18)","rgba(29,158,117,0.18)","rgba(99,153,34,0.18)","rgba(212,83,126,0.18)","rgba(136,135,128,0.18)"];
-    const txs=["#fdba74","#fcd34d","#7dd3fc","#c4b5fd","#6ee7b7","#86efac","#f9a8d4","#d1d0ca"];
+    const activePalette=[
+      {dot:"#22c55e",bg:"rgba(34,197,94,0.15)",tx:"#86efac"},
+      {dot:"#4ade80",bg:"rgba(74,222,128,0.15)",tx:"#86efac"},
+      {dot:"#16a34a",bg:"rgba(22,163,74,0.15)",tx:"#6ee7b7"},
+      {dot:"#15803d",bg:"rgba(21,128,61,0.15)",tx:"#4ade80"},
+      {dot:"#166534",bg:"rgba(22,101,52,0.15)",tx:"#86efac"},
+    ];
+    const inactiveSty={dot:"#555570",bg:"rgba(80,80,110,0.12)",tx:"#6b6b88"};
     const result={};
-    Object.entries(instantlyCampMap).forEach(([id,c],i)=>{
-      result[id]={name:c.name,lim:null,dot:colors[i%colors.length],bg:bgs[i%bgs.length],tx:txs[i%txs.length]};
+    // Sort: active (status===1) first, then inactive
+    const sorted=Object.entries(instantlyCampMap).sort((a,b)=>{
+      return (a[1].status===1?0:1)-(b[1].status===1?0:1);
+    });
+    let ai=0;
+    sorted.forEach(([id,c])=>{
+      const live=c.status===1;
+      const p=live?activePalette[ai++%activePalette.length]:inactiveSty;
+      result[id]={name:c.name,lim:null,dot:p.dot,bg:p.bg,tx:p.tx,active:live};
     });
     return result;
   }
@@ -1125,11 +1136,15 @@ function renderInboxes(){
     ${syncBar}
     ${subTabBar}
     <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin-bottom:1.5rem">
-      ${campKeys.map(k=>{const ci=CAMPS[k];const cnt=campCounts[k]||0;const cap=campCap[k]||0;return`<div onclick="inboxTab='campaigns';inboxSelCamp='${k}';renderInboxes()" style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1rem 1.25rem;cursor:pointer;transition:all .15s;position:relative;overflow:hidden" onmouseover="this.style.borderColor='${ci.tx}60';this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='var(--border)';this.style.transform='translateY(0)'">
-        <div style="position:absolute;top:0;left:0;right:0;height:2px;background:${ci.dot}"></div>
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><span style="width:10px;height:10px;border-radius:50%;background:${ci.dot};flex-shrink:0;display:inline-block"></span><span style="font-size:12px;font-weight:700;color:#fff">${ci.name}</span>${ci.done?'<span style="font-size:9px;font-weight:700;background:rgba(239,68,68,0.15);color:#fca5a5;padding:1px 6px;border-radius:4px;margin-left:auto">DONE</span>':""}${ci.isnew?'<span style="font-size:9px;font-weight:700;background:rgba(99,102,241,0.2);color:#a5b4fc;padding:1px 6px;border-radius:4px;margin-left:auto">NEW</span>':""}</div>
-        <div style="font-size:22px;font-weight:700;color:${ci.tx};letter-spacing:-1px;font-family:'DM Mono',monospace">${cnt} <span style="font-size:12px;opacity:.6">inboxes</span></div>
-        <div style="font-size:11px;color:var(--text3);margin-top:4px">${cap.toLocaleString()} emails/day${ci.lim?` · limit ${ci.lim.toLocaleString()}`:""}</div>
+      ${campKeys.map(k=>{const ci=CAMPS[k];const cnt=campCounts[k]||0;const cap=campCap[k]||0;const isLive=ci.active!==false;return`<div onclick="inboxTab='campaigns';inboxSelCamp='${k}';renderInboxes()" style="background:var(--bg2);border:1px solid ${isLive?ci.dot+'40':'var(--border)'};border-radius:var(--radius-lg);padding:1rem 1.25rem;cursor:pointer;transition:all .15s;position:relative;overflow:hidden;opacity:${isLive?1:0.5}" onmouseover="this.style.transform='translateY(-2px)';this.style.opacity='1'" onmouseout="this.style.transform='translateY(0)';this.style.opacity='${isLive?1:0.5}'">
+        <div style="position:absolute;top:0;left:0;right:0;height:2px;background:${isLive?ci.dot:'#444'}"></div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap">
+          <span style="width:8px;height:8px;border-radius:50%;background:${isLive?ci.dot:'#555'};flex-shrink:0;display:inline-block${isLive?';box-shadow:0 0 6px '+ci.dot:''}"></span>
+          <span style="font-size:12px;font-weight:700;color:${isLive?'#fff':'var(--text3)'};">${ci.name}</span>
+          ${isLive?`<span style="font-size:9px;font-weight:700;background:rgba(34,197,94,0.2);color:#86efac;padding:1px 7px;border-radius:20px;margin-left:auto;letter-spacing:.04em">LIVE</span>`:`<span style="font-size:9px;font-weight:700;background:rgba(80,80,100,0.3);color:#666;padding:1px 7px;border-radius:20px;margin-left:auto">PAUSED</span>`}
+        </div>
+        <div style="font-size:22px;font-weight:700;color:${isLive?ci.tx:'var(--text3)'};letter-spacing:-1px;font-family:'DM Mono',monospace">${cnt} <span style="font-size:12px;opacity:.6">inboxes</span></div>
+        <div style="font-size:11px;color:var(--text3);margin-top:4px">${cap.toLocaleString()} emails/day</div>
       </div>`}).join("")}
     </div>
     <div style="display:flex;gap:10px;margin-bottom:1.5rem;flex-wrap:wrap">
