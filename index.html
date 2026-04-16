@@ -898,9 +898,17 @@ function clearInstantlyKey(){
   updateInstantlyBadge();renderInboxes();
 }
 async function iGet(path){
-  // Route through Supabase Edge Function to avoid CORS
   const{data,error}=await sb.functions.invoke("instantly-proxy",{
-    body:{path},
+    body:{path,method:"GET"},
+    headers:{"x-instantly-key":instantlyKey}
+  });
+  if(error)throw new Error(error.message||"Proxy error");
+  if(data?.error)throw new Error(data.error);
+  return data;
+}
+async function iPost(path,body){
+  const{data,error}=await sb.functions.invoke("instantly-proxy",{
+    body:{path,method:"POST",requestBody:body},
     headers:{"x-instantly-key":instantlyKey}
   });
   if(error)throw new Error(error.message||"Proxy error");
@@ -921,30 +929,53 @@ async function loadInstantlyData(){
       cursor=d.next_starting_after||null;
     }while(cursor);
 
-    // 2. Fetch all campaigns
-    const cd=await iGet("/campaigns?limit=100&status=1");
-    const camps=cd.items||cd.campaigns||(Array.isArray(cd)?cd:[]);
+    // 2. Fetch all campaigns — response includes email_list showing which inboxes are assigned
+    let allCamps=[],campCursor=null;
+    do{
+      const q=new URLSearchParams({limit:"100"});if(campCursor)q.set("starting_after",campCursor);
+      const d=await iGet("/campaigns?"+q);
+      const items=d.items||d.campaigns||(Array.isArray(d)?d:[]);
+      allCamps=[...allCamps,...items];
+      campCursor=d.next_starting_after||null;
+    }while(campCursor);
+
     instantlyCampMap={};
-    camps.forEach(c=>{instantlyCampMap[c.id]={name:c.name,status:c.status};});
+    allCamps.forEach(c=>{instantlyCampMap[c.id]={name:c.name,status:c.status};});
 
-    // 3. For each campaign, fetch its accounts to build email→campaigns map
+    // 3. Build email → [campaign_ids] directly from campaigns' email_list
     const emailToCamps={};
-    await Promise.all(camps.map(async c=>{
-      try{
-        const ad=await iGet("/campaign-accounts?campaign_id="+c.id+"&limit=200");
-        const accts=ad.items||(Array.isArray(ad)?ad:[]);
-        accts.forEach(a=>{
-          const email=a.email||a.account_email;
-          if(email){if(!emailToCamps[email])emailToCamps[email]=[];emailToCamps[email].push(c.id);}
-        });
-      }catch(e){}
-    }));
+    allCamps.forEach(c=>{
+      (c.email_list||[]).forEach(email=>{
+        if(!emailToCamps[email])emailToCamps[email]=[];
+        if(!emailToCamps[email].includes(c.id))emailToCamps[email].push(c.id);
+      });
+    });
 
-    // 4. Map to our format
+    // 4. Fetch warmup + health scores via analytics endpoint
+    const warmupMap={};
+    try{
+      const emails=allAccounts.map(a=>a.email).filter(Boolean);
+      if(emails.length){
+        const wd=await iPost("/accounts/warmup-analytics",{emails});
+        const agg=wd.aggregate_data||wd||{};
+        Object.entries(agg).forEach(([email,d])=>{
+          warmupMap[email]={score:d.health_score||0};
+        });
+      }
+    }catch(e){console.warn("Warmup analytics unavailable:",e.message);}
+
+    // 5. Map everything to our internal format
     instantlyAccounts=allAccounts.map(a=>{
-      const wu=a.warmup_score??a.warmup_reputation??a.warmup_details?.warmup_reputation??0;
-      const health=a.health_score??a.daily_health??((a.status===1||a.status==="active")?100:50);
-      return{e:a.email,c:a.daily_limit??30,w:Math.round(wu),h:Math.round(health),v:emailToCamps[a.email]||[],_raw:a};
+      const wu=warmupMap[a.email]?.score??0;
+      const health=warmupMap[a.email]?.score??((a.status===1)?100:50);
+      return{
+        e:a.email,
+        c:a.daily_limit||30,
+        w:Math.round(wu),
+        h:Math.round(health),
+        v:emailToCamps[a.email]||[],
+        _raw:a
+      };
     });
 
     instantlyLastSync=new Date();
