@@ -389,9 +389,31 @@ tr:hover td{background:rgba(192,96,255,0.07)!important}
       <div class="modal-tabs" style="margin:1rem 1.5rem 0;margin-bottom:0">
         <button class="modal-tab on" onclick="switchSettingsTab(this,'stab-import')">📥 Import CSV</button>
         <button class="modal-tab" onclick="switchSettingsTab(this,'stab-deleted');loadDeletedLeads()">🗑 Recently Deleted</button>
+        <button class="modal-tab" onclick="switchSettingsTab(this,'stab-integrations')">🔌 Integrations</button>
       </div>
       <div id="stab-import" style="padding:1.5rem"><div id="import-body"></div></div>
       <div id="stab-deleted" style="display:none;padding:1.5rem"><div id="deleted-body"><p style="font-size:13px;color:var(--text3)">Loading...</p></div></div>
+      <div id="stab-integrations" style="display:none;padding:1.5rem">
+        <div style="margin-bottom:1.5rem">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+            <span style="font-size:22px">⚡</span>
+            <div><div style="font-size:15px;font-weight:700;color:#fff">Instantly</div><div style="font-size:12px;color:var(--text3)">Read-only · pulls live warmup scores, health, caps & campaign assignments</div></div>
+            <span id="instantly-status-badge" style="margin-left:auto;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;background:rgba(100,100,120,0.3);color:var(--text3)">Not connected</span>
+          </div>
+          <div class="fg" style="margin-bottom:10px">
+            <label>API Key (read-only)</label>
+            <input type="password" id="instantly-key-input" placeholder="Paste your Instantly API key..." style="font-family:'DM Mono',monospace;font-size:12px">
+          </div>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-accent" onclick="saveInstantlyKey()" style="font-size:13px">Connect →</button>
+            <button class="btn" onclick="clearInstantlyKey()" style="font-size:13px;color:#fca5a5">Disconnect</button>
+          </div>
+          <div id="instantly-connect-msg" style="margin-top:10px;font-size:12px;color:var(--text3)"></div>
+        </div>
+        <div style="padding:12px 14px;background:var(--bg3);border-radius:var(--radius);border:0.5px solid var(--border);font-size:12px;color:var(--text3);line-height:1.7">
+          <strong style="color:var(--text2)">How to get your key:</strong> Instantly → Settings → API Keys → Create key → set permission to <code style="background:var(--bg2);padding:1px 5px;border-radius:3px">all:read</code>
+        </div>
+      </div>
     </div>
     <div class="modal-footer" id="import-footer"></div>
   </div>
@@ -697,9 +719,10 @@ async function addLead(){
 function toggleStaleNote(id){const wrap=document.getElementById("stale-note-wrap-"+id);if(!wrap)return;const open=wrap.style.display==="none";wrap.style.display=open?"block":"none";if(open)setTimeout(()=>document.getElementById("stale-note-"+id)?.focus(),50);}
 async function saveStaleNote(id){const inp=document.getElementById("stale-note-"+id);const text=inp?.value.trim();if(!text)return;const lead=leads.find(l=>l.id===id);if(!lead)return;addActivity(lead,"note",text);lead.last_contact_date=today();await dbSaveLead(lead);renderDashboard();showToast("✓ Note saved · Last Contact updated to today",false,true);}
 
-function openSettingsModal(){resetImportModal();document.getElementById("settings-modal").classList.add("on");document.querySelectorAll("#settings-modal .modal-tab").forEach((b,i)=>b.classList.toggle("on",i===0));document.getElementById("stab-import").style.display="block";document.getElementById("stab-deleted").style.display="none";}
+function openSettingsModal(){resetImportModal();document.getElementById("settings-modal").classList.add("on");document.querySelectorAll("#settings-modal .modal-tab").forEach((b,i)=>b.classList.toggle("on",i===0));document.getElementById("stab-import").style.display="block";document.getElementById("stab-deleted").style.display="none";document.getElementById("stab-integrations").style.display="none";updateInstantlyBadge();}
+
 function closeSettingsModal(){document.getElementById("settings-modal").classList.remove("on");}
-function switchSettingsTab(btn,tabId){document.querySelectorAll("#settings-modal .modal-tab").forEach(b=>b.classList.remove("on"));btn.classList.add("on");["stab-import","stab-deleted"].forEach(t=>{const el=document.getElementById(t);if(el)el.style.display=t===tabId?"block":"none";});}
+function switchSettingsTab(btn,tabId){document.querySelectorAll("#settings-modal .modal-tab").forEach(b=>b.classList.remove("on"));btn.classList.add("on");["stab-import","stab-deleted","stab-integrations"].forEach(t=>{const el=document.getElementById(t);if(el)el.style.display=t===tabId?"block":"none";});}
 async function loadDeletedLeads(){const el=document.getElementById("deleted-body");if(!el)return;el.innerHTML=`<p style="font-size:13px;color:var(--text3)">Loading...</p>`;const{data,error}=await sb.from("deleted_leads").select("*").order("deleted_at",{ascending:false}).limit(50);if(error){el.innerHTML=`<p style="color:#fca5a5;font-size:13px">Failed to load: ${error.message}</p>`;return;}if(!data?.length){el.innerHTML=`<div style="text-align:center;padding:2rem"><div style="font-size:32px;margin-bottom:12px">🗑</div><p style="font-size:14px;font-weight:600;color:#fff;margin-bottom:6px">No deleted leads</p><p style="font-size:12px;color:var(--text3)">Deleted leads appear here for 30 days.</p></div>`;return;}el.innerHTML=`<p style="font-size:12px;color:var(--text3);margin-bottom:1rem">Last 50 deleted leads · click Restore to recover</p>${data.map(row=>{const d=row.lead_data||{};const sc=STATUS_CFG[d.status]||STATUS_CFG.new;const deletedAt=new Date(row.deleted_at).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric",hour:"numeric",minute:"2-digit"});const c=repColor(d.rep||"");return`<div style="display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:0.5px solid var(--border)"><div style="flex:1;min-width:0"><div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap"><span style="font-size:14px;font-weight:700;color:#fff">${d.company||"Unknown"}</span>${d.first_name||d.last_name?`<span style="font-size:12px;color:var(--text3)">${d.first_name||""} ${d.last_name||""}</span>`:""}<span class="sbadge" style="background:${sc.bg};color:${sc.cl};font-size:9px">${sc.label}</span></div><div style="display:flex;align-items:center;gap:10px;font-size:11px;color:var(--text3);flex-wrap:wrap">${d.rep?`<span style="color:${c.text};font-weight:600">${d.rep}</span>`:""}${d.vertical?`<span>${d.vertical}</span>`:""}<span>Deleted ${deletedAt}</span></div></div><button onclick="restoreLead('${row.id}')" style="font-family:'DM Sans',sans-serif;font-size:12px;font-weight:700;padding:7px 16px;border-radius:8px;border:1.5px solid rgba(134,239,172,0.4);background:rgba(34,197,94,0.1);color:#86efac;cursor:pointer;white-space:nowrap;flex-shrink:0" onmouseover="this.style.background='rgba(34,197,94,0.2)'" onmouseout="this.style.background='rgba(34,197,94,0.1)'">↩ Restore</button></div>`;}).join("")}`;}
 
 async function restoreLead(deletedId){const{data,error}=await sb.from("deleted_leads").select("*").eq("id",deletedId).single();if(error||!data){showToast("Couldn't find deleted lead",true);return;}await dbRestoreLead(data);render();showToast("✓ Lead restored",false,true);loadDeletedLeads();}
@@ -845,6 +868,104 @@ let inboxesData=[
 
 let inboxTab="overview",inboxSelCamp="propane",inboxFilter="all",inboxCampFilter="all",inboxQ="",inboxSk="e",inboxSd="asc",inboxExpanded=new Set(),inboxSelected=new Set();
 
+// ---- INSTANTLY INTEGRATION ----
+let instantlyKey=localStorage.getItem("instantly_api_key")||"";
+let instantlyAccounts=[];  // live from API
+let instantlyCampMap={};   // {id:{name,status,...}}
+let instantlyLastSync=null;
+let instantlyLoading=false;
+
+function updateInstantlyBadge(){
+  const el=document.getElementById("instantly-status-badge");if(!el)return;
+  const inp=document.getElementById("instantly-key-input");if(inp&&instantlyKey)inp.value=instantlyKey;
+  if(instantlyKey){el.textContent="Connected";el.style.background="rgba(34,197,94,0.2)";el.style.color="#86efac";}
+  else{el.textContent="Not connected";el.style.background="rgba(100,100,120,0.3)";el.style.color="var(--text3)";}
+}
+function saveInstantlyKey(){
+  const val=document.getElementById("instantly-key-input")?.value.trim();if(!val)return;
+  instantlyKey=val;localStorage.setItem("instantly_api_key",val);
+  const msg=document.getElementById("instantly-connect-msg");if(msg)msg.textContent="Connecting...";
+  loadInstantlyData().then(()=>{
+    if(msg)msg.innerHTML=instantlyAccounts.length?`<span style="color:#86efac">✓ Connected — ${instantlyAccounts.length} inboxes loaded</span>`:`<span style="color:#fca5a5">Connected but no accounts returned. Check key permissions.</span>`;
+    updateInstantlyBadge();
+  });
+}
+function clearInstantlyKey(){
+  instantlyKey="";instantlyAccounts=[];instantlyCampMap={};instantlyLastSync=null;
+  localStorage.removeItem("instantly_api_key");
+  const inp=document.getElementById("instantly-key-input");if(inp)inp.value="";
+  const msg=document.getElementById("instantly-connect-msg");if(msg)msg.textContent="Disconnected.";
+  updateInstantlyBadge();renderInboxes();
+}
+async function iGet(path){
+  const r=await fetch("https://api.instantly.ai/api/v2"+path,{headers:{"Authorization":"Bearer "+instantlyKey,"Content-Type":"application/json"}});
+  if(!r.ok)throw new Error(r.status+" "+r.statusText);
+  return r.json();
+}
+async function loadInstantlyData(){
+  if(!instantlyKey)return;
+  instantlyLoading=true;
+  try{
+    // 1. Fetch all accounts (paginated)
+    let allAccounts=[],cursor=null;
+    do{
+      const q=new URLSearchParams({limit:"100"});if(cursor)q.set("starting_after",cursor);
+      const d=await iGet("/accounts?"+q);
+      const items=d.items||d.accounts||(Array.isArray(d)?d:[]);
+      allAccounts=[...allAccounts,...items];
+      cursor=d.next_starting_after||null;
+    }while(cursor);
+
+    // 2. Fetch all campaigns
+    const cd=await iGet("/campaigns?limit=100&status=1");
+    const camps=cd.items||cd.campaigns||(Array.isArray(cd)?cd:[]);
+    instantlyCampMap={};
+    camps.forEach(c=>{instantlyCampMap[c.id]={name:c.name,status:c.status};});
+
+    // 3. For each campaign, fetch its accounts to build email→campaigns map
+    const emailToCamps={};
+    await Promise.all(camps.map(async c=>{
+      try{
+        const ad=await iGet("/campaign-accounts?campaign_id="+c.id+"&limit=200");
+        const accts=ad.items||(Array.isArray(ad)?ad:[]);
+        accts.forEach(a=>{
+          const email=a.email||a.account_email;
+          if(email){if(!emailToCamps[email])emailToCamps[email]=[];emailToCamps[email].push(c.id);}
+        });
+      }catch(e){}
+    }));
+
+    // 4. Map to our format
+    instantlyAccounts=allAccounts.map(a=>{
+      const wu=a.warmup_score??a.warmup_reputation??a.warmup_details?.warmup_reputation??0;
+      const health=a.health_score??a.daily_health??((a.status===1||a.status==="active")?100:50);
+      return{e:a.email,c:a.daily_limit??30,w:Math.round(wu),h:Math.round(health),v:emailToCamps[a.email]||[],_raw:a};
+    });
+
+    instantlyLastSync=new Date();
+  }catch(e){
+    showToast("Instantly: "+e.message,true);
+    console.error("Instantly error:",e);
+  }
+  instantlyLoading=false;
+}
+
+function iActiveData(){return instantlyAccounts.length?instantlyAccounts:inboxesData;}
+function iActiveCamps(){
+  if(Object.keys(instantlyCampMap).length){
+    // Build INBOX_CAMPS-style object from live Instantly campaigns
+    const colors=["#D85A30","#EF9F27","#378ADD","#7F77DD","#1D9E75","#639922","#D4537E","#888780"];
+    const bgs=["rgba(216,90,48,0.18)","rgba(239,159,39,0.18)","rgba(55,138,221,0.18)","rgba(127,119,221,0.18)","rgba(29,158,117,0.18)","rgba(99,153,34,0.18)","rgba(212,83,126,0.18)","rgba(136,135,128,0.18)"];
+    const txs=["#fdba74","#fcd34d","#7dd3fc","#c4b5fd","#6ee7b7","#86efac","#f9a8d4","#d1d0ca"];
+    const result={};
+    Object.entries(instantlyCampMap).forEach(([id,c],i)=>{
+      result[id]={name:c.name,lim:null,dot:colors[i%colors.length],bg:bgs[i%bgs.length],tx:txs[i%txs.length]};
+    });
+    return result;
+  }
+  return INBOX_CAMPS;
+}
+
 function getInboxSt(r){
   if(!r.v||r.v.length===0){const dom=r.e.split("@")[1];return WD_DOMAINS.includes(dom)?"warmup":"available";}
   if(r.v.length>1)return"conflict";
@@ -855,9 +976,10 @@ function toggleInboxCamp(email,campId){const r=inboxesData.find(x=>x.e===email);
 function bulkInboxToggle(campId){const adding=!inboxSelected.size||[...inboxSelected].some(em=>{const r=inboxesData.find(x=>x.e===em);return r&&!r.v.includes(campId);});inboxesData.forEach(r=>{if(inboxSelected.has(r.e)){const idx=r.v.indexOf(campId);if(adding){if(idx<0)r.v.push(campId);}else{if(idx>=0)r.v.splice(idx,1);}}});inboxSelected=new Set();renderInboxes();}
 function inboxDoSort(k){if(inboxSk===k)inboxSd=inboxSd==="asc"?"desc":"asc";else{inboxSk=k;inboxSd="asc";}renderInboxes();}
 function inboxSortArr(arr){return arr.slice().sort((a,b)=>{let av,bv;if(inboxSk==="e"){av=a.e;bv=b.e;}else if(inboxSk==="c"){av=a.c;bv=b.c;}else if(inboxSk==="w"){av=a.w;bv=b.w;}else if(inboxSk==="h"){av=a.h;bv=b.h;}else{av=a.e;bv=b.e;}if(av<bv)return inboxSd==="asc"?-1:1;if(av>bv)return inboxSd==="asc"?1:-1;return 0;});}
-function getFilteredInboxes(){
-  let arr=inboxesData.slice();
-  if(inboxQ){const q=inboxQ.toLowerCase();arr=arr.filter(r=>r.e.toLowerCase().includes(q)||(r.v||[]).some(c=>INBOX_CAMPS[c]?.name.toLowerCase().includes(q)));}
+function getFilteredInboxes(data){
+  data=data||iActiveData();
+  let arr=data.slice();
+  if(inboxQ){const q=inboxQ.toLowerCase();arr=arr.filter(r=>r.e.toLowerCase().includes(q)||(r.v||[]).some(c=>{const ci=iActiveCamps()[c];return ci&&ci.name.toLowerCase().includes(q);}));}
   if(inboxCampFilter!=="all")arr=arr.filter(r=>(r.v||[]).includes(inboxCampFilter));
   if(inboxFilter==="active")arr=arr.filter(r=>getInboxSt(r)==="active");
   else if(inboxFilter==="warmup")arr=arr.filter(r=>getInboxSt(r)==="warmup");
@@ -865,36 +987,46 @@ function getFilteredInboxes(){
   else if(inboxFilter==="conflict")arr=arr.filter(r=>getInboxSt(r)==="conflict");
   return inboxSortArr(arr);
 }
-function renderInboxTable(rows){
+function renderInboxTable(rows,CAMPS){
+  CAMPS=CAMPS||iActiveCamps();
   const stColors={active:"#86efac",warmup:"#fcd34d",available:"var(--text3)",conflict:"#fca5a5"};
   const stBgs={active:"rgba(34,197,94,0.06)",warmup:"rgba(252,211,77,0.06)",available:"transparent",conflict:"rgba(239,68,68,0.08)"};
-  const campKeys=Object.keys(INBOX_CAMPS);
   const sortArrow=(k)=>{if(inboxSk!==k)return'<span style="opacity:.3">↕</span>';return`<span style="opacity:1">${inboxSd==="asc"?"↑":"↓"}</span>`;};
   return`<div style="border:1px solid var(--border);border-radius:var(--radius-lg);overflow:auto">
-    <table style="width:100%;border-collapse:collapse;min-width:600px">
+    <table style="width:100%;border-collapse:collapse;min-width:580px">
       <thead><tr style="background:var(--bg3)">
-        <th style="padding:8px 12px;text-align:left;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;border-bottom:1px solid var(--border2);width:30px">
-          <input type="checkbox" style="width:14px;height:14px;cursor:pointer;accent-color:var(--accent)" ${rows.length>0&&rows.every(r=>inboxSelected.has(r.e))?"checked":""} onchange="rows.length>0&&rows.every(r=>inboxSelected.has(r.e))?rows.forEach(r=>inboxSelected.delete(r.e)):rows.forEach(r=>inboxSelected.add(r.e));renderInboxes()">
-        </th>
-        <th onclick="inboxDoSort('e')" style="padding:8px 12px;text-align:left;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;border-bottom:1px solid var(--border2);cursor:pointer">Email ${sortArrow('e')}</th>
-        <th onclick="inboxDoSort('c')" style="padding:8px 12px;text-align:left;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;border-bottom:1px solid var(--border2);cursor:pointer">Cap/Day ${sortArrow('c')}</th>
-        <th onclick="inboxDoSort('w')" style="padding:8px 12px;text-align:left;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;border-bottom:1px solid var(--border2);cursor:pointer">WU ${sortArrow('w')}</th>
-        <th onclick="inboxDoSort('h')" style="padding:8px 12px;text-align:left;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;border-bottom:1px solid var(--border2);cursor:pointer">Health ${sortArrow('h')}</th>
-        <th style="padding:8px 12px;text-align:left;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;border-bottom:1px solid var(--border2)">Campaigns</th>
-        <th style="padding:8px 12px;border-bottom:1px solid var(--border2);width:30px"></th>
+        <th onclick="inboxDoSort('e')" style="padding:8px 14px;text-align:left;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;border-bottom:1px solid var(--border2);cursor:pointer">Email ${sortArrow('e')}</th>
+        <th onclick="inboxDoSort('c')" style="padding:8px 12px;text-align:left;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;border-bottom:1px solid var(--border2);cursor:pointer;width:110px">Cap/Day ${sortArrow('c')}</th>
+        <th onclick="inboxDoSort('w')" style="padding:8px 12px;text-align:left;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;border-bottom:1px solid var(--border2);cursor:pointer;width:110px">Warmup ${sortArrow('w')}</th>
+        <th onclick="inboxDoSort('h')" style="padding:8px 12px;text-align:left;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;border-bottom:1px solid var(--border2);cursor:pointer;width:110px">Health ${sortArrow('h')}</th>
+        <th style="padding:8px 14px;text-align:left;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;border-bottom:1px solid var(--border2)">Campaigns</th>
       </tr></thead>
       <tbody>${rows.map(r=>{
-        const st=getInboxSt(r);const sel=inboxSelected.has(r.e);const exp=inboxExpanded.has(r.e);
-        return`<tr style="border-bottom:0.5px solid var(--border);background:${sel?"rgba(192,96,255,0.08)":stBgs[st]}">
-          <td style="padding:10px 12px"><input type="checkbox" style="width:14px;height:14px;cursor:pointer;accent-color:var(--accent)" ${sel?"checked":""} onchange="inboxSelected.has('${r.e}')?inboxSelected.delete('${r.e}'):inboxSelected.add('${r.e}');renderInboxes()"></td>
-          <td style="padding:10px 12px"><div style="font-size:13px;font-weight:600;color:#fff;font-family:'DM Mono',monospace">${r.e}</div><div style="margin-top:2px"><span style="font-size:10px;font-weight:700;color:${stColors[st]};text-transform:uppercase;letter-spacing:.06em">${st}</span></div></td>
-          <td style="padding:10px 12px"><div style="font-size:13px;font-weight:700;color:var(--text2);margin-bottom:4px">${r.c}</div>${inboxProgBar(r.c,30,"var(--accent)")}</td>
-          <td style="padding:10px 12px"><div style="font-size:13px;font-weight:700;color:${r.w>=55?"#86efac":r.w>=40?"#fcd34d":"#fca5a5"};margin-bottom:4px">${r.w}</div>${inboxProgBar(r.w,60,r.w>=55?"#86efac":r.w>=40?"#fcd34d":"#fca5a5")}</td>
-          <td style="padding:10px 12px"><div style="font-size:13px;font-weight:700;color:${r.h>=90?"#86efac":"#fca5a5"};margin-bottom:4px">${r.h}%</div>${inboxProgBar(r.h,100,r.h>=90?"#86efac":"#fca5a5")}</td>
-          <td style="padding:10px 12px"><div style="display:flex;flex-wrap:wrap;gap:4px">${(r.v||[]).map(c=>{const ci=INBOX_CAMPS[c];if(!ci)return"";return`<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;background:${ci.bg};color:${ci.tx};border:0.5px solid ${ci.tx}40;display:inline-flex;align-items:center;gap:4px"><span style="width:6px;height:6px;border-radius:50%;background:${ci.dot};flex-shrink:0;display:inline-block"></span>${ci.name}</span>`;}).join("")}${(r.v||[]).length===0?`<span style="font-size:11px;color:var(--text3);font-style:italic">none</span>`:""}</div></td>
-          <td style="padding:10px 12px;text-align:right"><button onclick="inboxExpanded.has('${r.e}')?inboxExpanded.delete('${r.e}'):inboxExpanded.add('${r.e}');renderInboxes()" style="font-family:'DM Mono',monospace;font-size:13px;background:transparent;border:none;color:var(--text3);cursor:pointer;padding:2px 6px">${exp?"▾":"▸"}</button></td>
-        </tr>
-        ${exp?`<tr style="background:rgba(192,96,255,0.04);border-bottom:0.5px solid var(--border)"><td colspan="7" style="padding:14px 16px"><div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px">Campaign Assignments for ${r.e}</div><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px">${campKeys.map(ck=>{const ci=INBOX_CAMPS[ck];const on=(r.v||[]).includes(ck);return`<button onclick="toggleInboxCamp('${r.e}','${ck}')" style="font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;padding:8px 12px;border-radius:8px;border:1.5px solid ${on?ci.tx+"80":"var(--border2)"};background:${on?ci.bg:"transparent"};color:${on?ci.tx:"var(--text3)"};cursor:pointer;text-align:left;display:flex;align-items:center;gap:8px"><span style="width:8px;height:8px;border-radius:50%;background:${ci.dot};flex-shrink:0;display:inline-block"></span><span>${ci.name}</span>${ci.done?'<span style="font-size:9px;opacity:.6;margin-left:auto">done</span>':""}${ci.isnew?'<span style="font-size:9px;color:#a5b4fc;margin-left:auto">new</span>':""}</button>`;}).join("")}</div></td></tr>`:""}`;
+        const st=getInboxSt(r);
+        return`<tr style="border-bottom:0.5px solid var(--border);background:${stBgs[st]}">
+          <td style="padding:11px 14px">
+            <div style="font-size:13px;font-weight:600;color:#fff;font-family:'DM Mono',monospace">${r.e}</div>
+            <div style="margin-top:2px"><span style="font-size:10px;font-weight:700;color:${stColors[st]};text-transform:uppercase;letter-spacing:.06em">${st}</span></div>
+          </td>
+          <td style="padding:11px 12px">
+            <div style="font-size:14px;font-weight:700;color:var(--text2);margin-bottom:5px">${r.c}</div>
+            ${inboxProgBar(r.c,50,"var(--accent)")}
+          </td>
+          <td style="padding:11px 12px">
+            <div style="font-size:14px;font-weight:700;color:${r.w>=55?"#86efac":r.w>=40?"#fcd34d":"#fca5a5"};margin-bottom:5px">${r.w}</div>
+            ${inboxProgBar(r.w,100,r.w>=55?"#86efac":r.w>=40?"#fcd34d":"#fca5a5")}
+          </td>
+          <td style="padding:11px 12px">
+            <div style="font-size:14px;font-weight:700;color:${r.h>=90?"#86efac":"#fca5a5"};margin-bottom:5px">${r.h}%</div>
+            ${inboxProgBar(r.h,100,r.h>=90?"#86efac":"#fca5a5")}
+          </td>
+          <td style="padding:11px 14px">
+            <div style="display:flex;flex-wrap:wrap;gap:4px">
+              ${(r.v||[]).map(c=>{const ci=CAMPS[c];if(!ci)return"";return`<span style="font-size:10px;font-weight:700;padding:3px 9px;border-radius:20px;background:${ci.bg};color:${ci.tx};border:0.5px solid ${ci.tx}40;display:inline-flex;align-items:center;gap:4px"><span style="width:6px;height:6px;border-radius:50%;background:${ci.dot};flex-shrink:0;display:inline-block"></span>${ci.name}</span>`;}).join("")}
+              ${(r.v||[]).length===0?`<span style="font-size:11px;color:var(--text3);font-style:italic">none</span>`:""}
+            </div>
+          </td>
+        </tr>`;
       }).join("")}</tbody>
     </table>
   </div>`;
@@ -902,31 +1034,64 @@ function renderInboxTable(rows){
 
 function renderInboxes(){
   const el=document.getElementById("inboxes-content");if(!el)return;
-  const campKeys=Object.keys(INBOX_CAMPS);
-  const stats={total:inboxesData.length,active:inboxesData.filter(r=>getInboxSt(r)==="active").length,warmup:inboxesData.filter(r=>getInboxSt(r)==="warmup").length,available:inboxesData.filter(r=>getInboxSt(r)==="available").length,conflict:inboxesData.filter(r=>getInboxSt(r)==="conflict").length};
-  const campCounts={};campKeys.forEach(k=>{campCounts[k]=inboxesData.filter(r=>(r.v||[]).includes(k)).length;});
-  const campCap={};campKeys.forEach(k=>{campCap[k]=inboxesData.filter(r=>(r.v||[]).includes(k)).reduce((s,r)=>s+r.c,0);});
+
+  // Kick off live fetch on first load if key is set and no data yet
+  if(instantlyKey&&!instantlyAccounts.length&&!instantlyLoading){
+    instantlyLoading=true;
+    loadInstantlyData().then(()=>renderInboxes());
+  }
+
+  const CAMPS=iActiveCamps();
+  const DATA=iActiveData();
+  const campKeys=Object.keys(CAMPS);
+
+  // Default selected camp to first key if current selection isn't valid
+  if(!CAMPS[inboxSelCamp])inboxSelCamp=campKeys[0]||"";
+
+  const stats={total:DATA.length,active:DATA.filter(r=>getInboxSt(r)==="active").length,warmup:DATA.filter(r=>getInboxSt(r)==="warmup").length,available:DATA.filter(r=>getInboxSt(r)==="available").length,conflict:DATA.filter(r=>getInboxSt(r)==="conflict").length};
+  const campCounts={};campKeys.forEach(k=>{campCounts[k]=DATA.filter(r=>(r.v||[]).includes(k)).length;});
+  const campCap={};campKeys.forEach(k=>{campCap[k]=DATA.filter(r=>(r.v||[]).includes(k)).reduce((s,r)=>s+r.c,0);});
+
+  // Live status bar
+  const syncBar=instantlyLoading
+    ?`<div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:rgba(125,211,252,0.08);border:1px solid rgba(125,211,252,0.3);border-radius:var(--radius-lg);margin-bottom:1rem"><div class="spinner" style="width:16px;height:16px;border-width:2px"></div><span style="font-size:12px;color:#7dd3fc;font-weight:600">Fetching live data from Instantly...</span></div>`
+    :instantlyKey&&instantlyAccounts.length
+      ?`<div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.3);border-radius:var(--radius-lg);margin-bottom:1rem;flex-wrap:wrap">
+          <span style="font-size:13px">⚡</span>
+          <span style="font-size:12px;font-weight:700;color:#86efac">Live from Instantly</span>
+          <span style="font-size:11px;color:var(--text3)">${instantlyAccounts.length} inboxes · ${Object.keys(instantlyCampMap).length} campaigns${instantlyLastSync?" · synced "+instantlyLastSync.toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"}):""}</span>
+          <button onclick="loadInstantlyData().then(()=>renderInboxes())" style="font-family:'DM Sans',sans-serif;font-size:11px;font-weight:600;padding:4px 12px;border-radius:6px;border:0.5px solid rgba(34,197,94,0.4);background:rgba(34,197,94,0.1);color:#86efac;cursor:pointer;margin-left:auto">🔄 Refresh</button>
+          <button onclick="openSettingsModal();setTimeout(()=>{document.querySelectorAll('#settings-modal .modal-tab')[2].click()},100)" style="font-family:'DM Sans',sans-serif;font-size:11px;padding:4px 10px;border-radius:6px;border:0.5px solid var(--border2);background:transparent;color:var(--text3);cursor:pointer">⚙ Settings</button>
+        </div>`
+      :instantlyKey&&!instantlyLoading
+        ?`<div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.3);border-radius:var(--radius-lg);margin-bottom:1rem">
+            <span style="font-size:12px;color:#fca5a5;font-weight:600">⚠ Could not load Instantly data</span>
+            <button onclick="loadInstantlyData().then(()=>renderInboxes())" style="font-family:'DM Sans',sans-serif;font-size:11px;font-weight:600;padding:4px 10px;border-radius:6px;border:0.5px solid rgba(239,68,68,0.3);background:rgba(239,68,68,0.08);color:#fca5a5;cursor:pointer">Retry</button>
+            <button onclick="openSettingsModal();setTimeout(()=>{document.querySelectorAll('#settings-modal .modal-tab')[2].click()},100)" style="font-family:'DM Sans',sans-serif;font-size:11px;padding:4px 10px;border-radius:6px;border:0.5px solid var(--border2);background:transparent;color:var(--text3);cursor:pointer;margin-left:auto">⚙ Settings</button>
+          </div>`
+        :`<div style="display:flex;align-items:center;gap:12px;padding:10px 14px;background:rgba(125,211,252,0.06);border:1px solid rgba(125,211,252,0.25);border-radius:var(--radius-lg);margin-bottom:1rem">
+            <span style="font-size:13px">🔌</span>
+            <span style="font-size:12px;color:#7dd3fc">Connect your Instantly API key for live warmup scores, health, and campaign assignments.</span>
+            <button onclick="openSettingsModal();setTimeout(()=>{document.querySelectorAll('#settings-modal .modal-tab')[2].click()},100)" style="font-family:'DM Sans',sans-serif;font-size:12px;font-weight:700;padding:6px 14px;border-radius:8px;border:1px solid rgba(125,211,252,0.4);background:rgba(125,211,252,0.1);color:#7dd3fc;cursor:pointer;white-space:nowrap;flex-shrink:0;margin-left:auto">Connect →</button>
+          </div>`;
+
   const subTabBar=`<div style="display:flex;gap:4px;margin-bottom:1.5rem;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:4px;width:fit-content">
     ${[{k:"overview",l:"📊 Overview"},{k:"campaigns",l:"📋 Campaigns"},{k:"all",l:"📧 All Inboxes"}].map(t=>`<button onclick="inboxTab='${t.k}';renderInboxes()" style="font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;padding:8px 18px;border-radius:10px;border:none;cursor:pointer;background:${inboxTab===t.k?"var(--accent-dim)":"transparent"};color:${inboxTab===t.k?"#fff":"var(--text3)"}">${t.l}</button>`).join("")}
   </div>`;
 
   if(inboxTab==="overview"){
-    const wdStats=WD_DOMAINS.map(d=>{const inboxes=inboxesData.filter(r=>r.e.endsWith("@"+d));const active=inboxes.filter(r=>(r.v||[]).length>0).length;return{d,total:inboxes.length,active,warmup:inboxes.filter(r=>getInboxSt(r)==="warmup").length};});
-    const conflicts=inboxesData.filter(r=>(r.v||[]).length>1);
+    const wdStats=WD_DOMAINS.map(d=>{const inboxes=DATA.filter(r=>r.e.endsWith("@"+d));const active=inboxes.filter(r=>(r.v||[]).length>0).length;return{d,total:inboxes.length,active,warmup:inboxes.filter(r=>getInboxSt(r)==="warmup").length};});
+    const conflicts=DATA.filter(r=>(r.v||[]).length>1);
     el.innerHTML=`
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;flex-wrap:wrap;gap:10px">
-      <div><h2 style="font-size:20px;font-weight:700;color:#fff;margin-bottom:3px">📧 Inbox Manager</h2><p style="font-size:12px;color:var(--text3)">${stats.total} inboxes across campaigns</p></div>
+      <div><h2 style="font-size:20px;font-weight:700;color:#fff;margin-bottom:3px">📧 Inbox Manager</h2><p style="font-size:12px;color:var(--text3)">${stats.total} inboxes across ${campKeys.length} campaigns</p></div>
     </div>
+    ${syncBar}
     ${subTabBar}
     <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin-bottom:1.5rem">
-      ${campKeys.map(k=>{const ci=INBOX_CAMPS[k];const cnt=campCounts[k]||0;const cap=campCap[k]||0;return`<div onclick="inboxTab='campaigns';inboxSelCamp='${k}';renderInboxes()" style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1rem 1.25rem;cursor:pointer;transition:all .15s;position:relative;overflow:hidden" onmouseover="this.style.borderColor='${ci.tx}60';this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='var(--border)';this.style.transform='translateY(0)'">
+      ${campKeys.map(k=>{const ci=CAMPS[k];const cnt=campCounts[k]||0;const cap=campCap[k]||0;return`<div onclick="inboxTab='campaigns';inboxSelCamp='${k}';renderInboxes()" style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1rem 1.25rem;cursor:pointer;transition:all .15s;position:relative;overflow:hidden" onmouseover="this.style.borderColor='${ci.tx}60';this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='var(--border)';this.style.transform='translateY(0)'">
         <div style="position:absolute;top:0;left:0;right:0;height:2px;background:${ci.dot}"></div>
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
-          <span style="width:10px;height:10px;border-radius:50%;background:${ci.dot};flex-shrink:0;display:inline-block"></span>
-          <span style="font-size:12px;font-weight:700;color:#fff">${ci.name}</span>
-          ${ci.done?'<span style="font-size:9px;font-weight:700;background:rgba(239,68,68,0.15);color:#fca5a5;padding:1px 6px;border-radius:4px;margin-left:auto">DONE</span>':""}
-          ${ci.isnew?'<span style="font-size:9px;font-weight:700;background:rgba(99,102,241,0.2);color:#a5b4fc;padding:1px 6px;border-radius:4px;margin-left:auto">NEW</span>':""}
-        </div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><span style="width:10px;height:10px;border-radius:50%;background:${ci.dot};flex-shrink:0;display:inline-block"></span><span style="font-size:12px;font-weight:700;color:#fff">${ci.name}</span>${ci.done?'<span style="font-size:9px;font-weight:700;background:rgba(239,68,68,0.15);color:#fca5a5;padding:1px 6px;border-radius:4px;margin-left:auto">DONE</span>':""}${ci.isnew?'<span style="font-size:9px;font-weight:700;background:rgba(99,102,241,0.2);color:#a5b4fc;padding:1px 6px;border-radius:4px;margin-left:auto">NEW</span>':""}</div>
         <div style="font-size:22px;font-weight:700;color:${ci.tx};letter-spacing:-1px;font-family:'DM Mono',monospace">${cnt} <span style="font-size:12px;opacity:.6">inboxes</span></div>
         <div style="font-size:11px;color:var(--text3);margin-top:4px">${cap.toLocaleString()} emails/day${ci.lim?` · limit ${ci.lim.toLocaleString()}`:""}</div>
       </div>`}).join("")}
@@ -934,62 +1099,50 @@ function renderInboxes(){
     <div style="display:flex;gap:10px;margin-bottom:1.5rem;flex-wrap:wrap">
       ${[{l:"In Campaigns",v:stats.active,c:"#86efac"},{l:"Warmup",v:stats.warmup,c:"#fcd34d"},{l:"Available",v:stats.available,c:"var(--text3)"},{l:"Conflict",v:stats.conflict,c:"#fca5a5"},{l:"Total",v:stats.total,c:"var(--text2)"}].map(s=>`<div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:12px 18px;flex:1;min-width:100px"><div style="font-size:24px;font-weight:700;color:${s.c};font-family:'DM Mono',monospace">${s.v}</div><div style="font-size:11px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:.07em;margin-top:2px">${s.l}</div></div>`).join("")}
     </div>
-    ${wdStats.length>0?`<div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1.25rem;margin-bottom:1.5rem">
-      <h3 style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:12px">Warmup Domains</h3>
-      ${wdStats.map(d=>`<div style="display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:0.5px solid var(--border)"><div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:600;color:#fff;font-family:'DM Mono',monospace">${d.d}</div><div style="font-size:11px;color:var(--text3)">${d.total} inboxes · ${d.active} in campaigns · ${d.warmup} warming up</div></div><div style="width:150px">${inboxProgBar(d.active,d.total,"var(--accent)")}</div></div>`).join("")}
-    </div>`:""}
-    ${conflicts.length>0?`<div style="background:var(--bg2);border:1px solid rgba(239,68,68,0.35);border-radius:var(--radius-lg);padding:1.25rem;position:relative;overflow:hidden">
-      <div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,#fca5a5,#f87171)"></div>
-      <h3 style="font-size:11px;font-weight:700;color:#fca5a5;text-transform:uppercase;letter-spacing:.1em;margin-bottom:12px">⚠ Dual-Campaign Conflicts (${conflicts.length})</h3>
-      ${conflicts.map(r=>`<div style="display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:0.5px solid rgba(239,68,68,0.15)"><div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:600;color:#fff;font-family:'DM Mono',monospace">${r.e}</div></div><div style="display:flex;gap:4px;flex-wrap:wrap">${(r.v||[]).map(c=>{const ci=INBOX_CAMPS[c];return ci?`<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;background:${ci.bg};color:${ci.tx}">${ci.name}</span>`:""}).join("")}</div><button onclick="inboxTab='all';inboxQ='${r.e}';renderInboxes()" style="font-family:'DM Sans',sans-serif;font-size:11px;padding:4px 10px;border-radius:6px;border:0.5px solid rgba(239,68,68,0.4);background:rgba(239,68,68,0.08);color:#fca5a5;cursor:pointer;white-space:nowrap;flex-shrink:0">Fix →</button></div>`).join("")}
-    </div>`:""}`;
+    ${wdStats.filter(d=>d.total>0).length>0?`<div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1.25rem;margin-bottom:1.5rem"><h3 style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:12px">Warmup Domains</h3>${wdStats.filter(d=>d.total>0).map(d=>`<div style="display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:0.5px solid var(--border)"><div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:600;color:#fff;font-family:'DM Mono',monospace">${d.d}</div><div style="font-size:11px;color:var(--text3)">${d.total} inboxes · ${d.active} in campaigns · ${d.warmup} warming up</div></div><div style="width:150px">${inboxProgBar(d.active,d.total,"var(--accent)")}</div></div>`).join("")}</div>`:""}
+    ${conflicts.length>0?`<div style="background:var(--bg2);border:1px solid rgba(239,68,68,0.35);border-radius:var(--radius-lg);padding:1.25rem;position:relative;overflow:hidden"><div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,#fca5a5,#f87171)"></div><h3 style="font-size:11px;font-weight:700;color:#fca5a5;text-transform:uppercase;letter-spacing:.1em;margin-bottom:12px">⚠ Dual-Campaign Conflicts (${conflicts.length})</h3>${conflicts.map(r=>`<div style="display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:0.5px solid rgba(239,68,68,0.15)"><div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:600;color:#fff;font-family:'DM Mono',monospace">${r.e}</div></div><div style="display:flex;gap:4px;flex-wrap:wrap">${(r.v||[]).map(c=>{const ci=CAMPS[c];return ci?`<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;background:${ci.bg};color:${ci.tx}">${ci.name}</span>`:""}).join("")}</div><a href="https://app.instantly.ai" target="_blank" style="font-family:'DM Sans',sans-serif;font-size:11px;padding:4px 10px;border-radius:6px;border:0.5px solid rgba(239,68,68,0.4);background:rgba(239,68,68,0.08);color:#fca5a5;cursor:pointer;white-space:nowrap;flex-shrink:0;text-decoration:none">Fix in Instantly →</a></div>`).join("")}</div>`:""}`;
     return;
   }
 
   if(inboxTab==="campaigns"){
-    const ci=INBOX_CAMPS[inboxSelCamp]||Object.values(INBOX_CAMPS)[0];const campInboxes=inboxesData.filter(r=>(r.v||[]).includes(inboxSelCamp));const capTotal=campInboxes.reduce((s,r)=>s+r.c,0);
+    const ci=CAMPS[inboxSelCamp]||Object.values(CAMPS)[0];const campInboxes=DATA.filter(r=>(r.v||[]).includes(inboxSelCamp));const capTotal=campInboxes.reduce((s,r)=>s+r.c,0);
     el.innerHTML=`
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;flex-wrap:wrap;gap:10px">
-      <h2 style="font-size:20px;font-weight:700;color:#fff">📋 Campaigns</h2>
-    </div>
-    ${subTabBar}
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;flex-wrap:wrap;gap:10px"><h2 style="font-size:20px;font-weight:700;color:#fff">📋 Campaigns</h2>${instantlyKey?`<a href="https://app.instantly.ai" target="_blank" style="font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;padding:6px 14px;border-radius:8px;border:0.5px solid rgba(125,211,252,0.3);background:rgba(125,211,252,0.08);color:#7dd3fc;text-decoration:none;display:inline-flex;align-items:center;gap:6px">Manage in Instantly ↗</a>`:""}</div>
+    ${syncBar}${subTabBar}
     <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:1.25rem">
-      ${campKeys.map(k=>{const ci2=INBOX_CAMPS[k];const on=inboxSelCamp===k;return`<button onclick="inboxSelCamp='${k}';renderInboxes()" style="font-family:'DM Sans',sans-serif;font-size:12px;font-weight:700;padding:7px 14px;border-radius:8px;border:1.5px solid ${on?ci2.tx+"80":"var(--border2)"};background:${on?ci2.bg:"transparent"};color:${on?ci2.tx:"var(--text3)"};cursor:pointer;display:inline-flex;align-items:center;gap:6px;transition:all .15s"><span style="width:8px;height:8px;border-radius:50%;background:${ci2.dot};flex-shrink:0"></span>${ci2.name}${ci2.done?'<span style="font-size:9px;opacity:.6">done</span>':""}${ci2.isnew?'<span style="font-size:9px;color:#a5b4fc">new</span>':""}</button>`;}).join("")}
+      ${campKeys.map(k=>{const ci2=CAMPS[k];const on=inboxSelCamp===k;return`<button onclick="inboxSelCamp='${k}';renderInboxes()" style="font-family:'DM Sans',sans-serif;font-size:12px;font-weight:700;padding:7px 14px;border-radius:8px;border:1.5px solid ${on?ci2.tx+"80":"var(--border2)"};background:${on?ci2.bg:"transparent"};color:${on?ci2.tx:"var(--text3)"};cursor:pointer;display:inline-flex;align-items:center;gap:6px;transition:all .15s"><span style="width:8px;height:8px;border-radius:50%;background:${ci2.dot};flex-shrink:0"></span>${ci2.name}${ci2.done?'<span style="font-size:9px;opacity:.6">done</span>':""}${ci2.isnew?'<span style="font-size:9px;color:#a5b4fc">new</span>':""}</button>`;}).join("")}
     </div>
     <div style="display:flex;gap:10px;margin-bottom:1.25rem;flex-wrap:wrap">
       <div style="background:${ci.bg};border:1px solid ${ci.tx}40;border-radius:var(--radius-lg);padding:12px 20px"><div style="font-size:22px;font-weight:700;color:${ci.tx};font-family:'DM Mono',monospace">${campInboxes.length}</div><div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;margin-top:2px">Inboxes</div></div>
       <div style="background:${ci.bg};border:1px solid ${ci.tx}40;border-radius:var(--radius-lg);padding:12px 20px"><div style="font-size:22px;font-weight:700;color:${ci.tx};font-family:'DM Mono',monospace">${capTotal.toLocaleString()}</div><div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;margin-top:2px">Emails/Day</div></div>
       ${ci.lim?`<div style="background:${ci.bg};border:1px solid ${ci.tx}40;border-radius:var(--radius-lg);padding:12px 20px"><div style="font-size:22px;font-weight:700;color:${ci.tx};font-family:'DM Mono',monospace">${ci.lim.toLocaleString()}</div><div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;margin-top:2px">Daily Limit</div></div>`:""}
     </div>
-    ${campInboxes.length>0?renderInboxTable(inboxSortArr(campInboxes)):`<div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:3rem;text-align:center"><p style="font-size:13px;color:var(--text3)">No inboxes assigned to this campaign yet.</p></div>`}`;
+    ${campInboxes.length>0?renderInboxTable(inboxSortArr(campInboxes),CAMPS):`<div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:3rem;text-align:center"><p style="font-size:13px;color:var(--text3)">No inboxes in this campaign.</p></div>`}`;
     return;
   }
 
   // All Inboxes tab
-  const filtered=getFilteredInboxes();
+  const filtered=getFilteredInboxes(DATA);
   el.innerHTML=`
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;flex-wrap:wrap;gap:10px">
     <h2 style="font-size:20px;font-weight:700;color:#fff">📧 All Inboxes</h2>
-    <span style="font-size:12px;color:var(--text3);font-family:'DM Mono',monospace">${filtered.length} of ${inboxesData.length}</span>
+    <div style="display:flex;align-items:center;gap:8px">
+      <span style="font-size:12px;color:var(--text3);font-family:'DM Mono',monospace">${filtered.length} of ${DATA.length}</span>
+      ${instantlyKey?`<a href="https://app.instantly.ai" target="_blank" style="font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;padding:6px 14px;border-radius:8px;border:0.5px solid rgba(125,211,252,0.3);background:rgba(125,211,252,0.08);color:#7dd3fc;text-decoration:none">Manage in Instantly ↗</a>`:""}
+    </div>
   </div>
-  ${subTabBar}
+  ${syncBar}${subTabBar}
   <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:1rem;align-items:center">
     <div style="position:relative;flex:1;min-width:200px;max-width:320px"><span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--text3);font-size:13px;pointer-events:none">⌕</span><input value="${inboxQ}" placeholder="Search email or campaign..." style="padding-left:32px;font-size:13px" oninput="inboxQ=this.value;renderInboxes()"></div>
     <select style="width:auto;font-size:12px;padding:7px 12px;background:var(--bg3);border:1px solid var(--border2);border-radius:8px;color:var(--text2);cursor:pointer" onchange="inboxCampFilter=this.value;renderInboxes()">
       <option value="all" ${inboxCampFilter==="all"?"selected":""}>All campaigns</option>
-      ${campKeys.map(k=>`<option value="${k}" ${inboxCampFilter===k?"selected":""}>${INBOX_CAMPS[k].name}</option>`).join("")}
+      ${campKeys.map(k=>`<option value="${k}" ${inboxCampFilter===k?"selected":""}>${CAMPS[k].name}</option>`).join("")}
     </select>
   </div>
   <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:1rem">
     ${[{k:"all",l:`All (${stats.total})`},{k:"active",l:`Active (${stats.active})`},{k:"warmup",l:`Warmup (${stats.warmup})`},{k:"available",l:`Available (${stats.available})`},{k:"conflict",l:`Conflict (${stats.conflict})`}].map(f=>{const on=inboxFilter===f.k;return`<button onclick="inboxFilter='${f.k}';renderInboxes()" style="font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;padding:5px 13px;border-radius:20px;border:0.5px solid ${on?"var(--accent-bright)":"var(--border2)"};background:${on?"var(--accent-dim)":"var(--bg3)"};color:${on?"#fff":"var(--text2)"};cursor:pointer">${f.l}</button>`;}).join("")}
   </div>
-  ${inboxSelected.size>0?`<div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--accent-dim);border:1px solid var(--accent);border-radius:var(--radius-lg);margin-bottom:1rem;flex-wrap:wrap">
-    <span style="font-size:13px;font-weight:700;color:#fff">${inboxSelected.size} selected</span>
-    <span style="font-size:12px;color:var(--text3)">Toggle campaign:</span>
-    <div style="display:flex;gap:5px;flex-wrap:wrap">${campKeys.map(k=>{const ci=INBOX_CAMPS[k];return`<button onclick="bulkInboxToggle('${k}')" style="font-family:'DM Sans',sans-serif;font-size:11px;font-weight:700;padding:5px 11px;border-radius:6px;border:1px solid ${ci.tx}60;background:${ci.bg};color:${ci.tx};cursor:pointer;white-space:nowrap">${ci.name}</button>`;}).join("")}</div>
-    <button onclick="inboxSelected=new Set();renderInboxes()" style="font-family:'DM Sans',sans-serif;font-size:11px;padding:4px 10px;border-radius:6px;border:0.5px solid var(--border2);background:transparent;color:var(--text3);cursor:pointer;margin-left:auto">✕ Clear</button>
-  </div>`:""}
-  ${filtered.length===0?`<div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:3rem;text-align:center"><p style="font-size:13px;color:var(--text3)">No inboxes match your filters.</p></div>`:renderInboxTable(filtered)}`;
+  ${filtered.length===0?`<div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:3rem;text-align:center"><p style="font-size:13px;color:var(--text3)">No inboxes match your filters.</p></div>`:renderInboxTable(filtered,CAMPS)}`;
 }
 </script>
 </body>
