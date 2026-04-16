@@ -1014,8 +1014,16 @@ function iActiveCamps(){
 }
 
 function getInboxSt(r){
-  if(!r.v||r.v.length===0){const dom=r.e.split("@")[1];return WD_DOMAINS.includes(dom)?"warmup":"available";}
-  if(r.v.length>1)return"conflict";
+  const CAMPS=iActiveCamps();
+  // Only count assignments to LIVE (active) campaigns
+  const liveCamps=(r.v||[]).filter(c=>CAMPS[c]?.active!==false&&CAMPS[c]);
+  if(liveCamps.length===0){
+    // Warmup only if score < 90 — once fully warmed up, show as available
+    const dom=r.e.split("@")[1];
+    const isWarmingUp=(r.w<90||r.h<90)&&WD_DOMAINS.includes(dom);
+    return isWarmingUp?"warmup":"available";
+  }
+  if(liveCamps.length>1)return"conflict";
   return"active";
 }
 function inboxProgBar(val,max,color){const pct=max?Math.min(100,Math.round((val/max)*100)):0;return`<div style="width:100%;height:6px;background:rgba(255,255,255,0.08);border-radius:3px;overflow:hidden"><div style="width:${pct}%;height:100%;background:${color};border-radius:3px;transition:width .3s"></div></div>`;}
@@ -1069,7 +1077,7 @@ function renderInboxTable(rows,CAMPS){
           </td>
           <td style="padding:11px 14px">
             <div style="display:flex;flex-wrap:wrap;gap:4px">
-              ${(r.v||[]).map(c=>{const ci=CAMPS[c];if(!ci)return"";return`<span style="font-size:10px;font-weight:700;padding:3px 9px;border-radius:20px;background:${ci.bg};color:${ci.tx};border:0.5px solid ${ci.tx}40;display:inline-flex;align-items:center;gap:4px"><span style="width:6px;height:6px;border-radius:50%;background:${ci.dot};flex-shrink:0;display:inline-block"></span>${ci.name}</span>`;}).join("")}
+              ${(r.v||[]).filter(c=>CAMPS[c]?.active!==false&&CAMPS[c]).map(c=>{const ci=CAMPS[c];return`<span style="font-size:10px;font-weight:700;padding:3px 9px;border-radius:20px;background:${ci.bg};color:${ci.tx};border:0.5px solid ${ci.tx}40;display:inline-flex;align-items:center;gap:4px"><span style="width:6px;height:6px;border-radius:50%;background:${ci.dot};flex-shrink:0;display:inline-block"></span>${ci.name}</span>`;}).join("")}
               ${(r.v||[]).length===0?`<span style="font-size:11px;color:var(--text3);font-style:italic">none</span>`:""}
             </div>
           </td>
@@ -1128,7 +1136,7 @@ function renderInboxes(){
 
   if(inboxTab==="overview"){
     const wdStats=WD_DOMAINS.map(d=>{const inboxes=DATA.filter(r=>r.e.endsWith("@"+d));const active=inboxes.filter(r=>(r.v||[]).length>0).length;return{d,total:inboxes.length,active,warmup:inboxes.filter(r=>getInboxSt(r)==="warmup").length};});
-    const conflicts=DATA.filter(r=>(r.v||[]).length>1);
+    const conflicts=DATA.filter(r=>{const liveCamps=(r.v||[]).filter(c=>CAMPS[c]?.active!==false&&CAMPS[c]);return liveCamps.length>1;});
     el.innerHTML=`
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;flex-wrap:wrap;gap:10px">
       <div><h2 style="font-size:20px;font-weight:700;color:#fff;margin-bottom:3px">📧 Inbox Manager</h2><p style="font-size:12px;color:var(--text3)">${stats.total} inboxes across ${campKeys.length} campaigns</p></div>
@@ -1151,7 +1159,7 @@ function renderInboxes(){
       ${[{l:"In Campaigns",v:stats.active,c:"#86efac"},{l:"Warmup",v:stats.warmup,c:"#fcd34d"},{l:"Available",v:stats.available,c:"var(--text3)"},{l:"Conflict",v:stats.conflict,c:"#fca5a5"},{l:"Total",v:stats.total,c:"var(--text2)"}].map(s=>`<div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:12px 18px;flex:1;min-width:100px"><div style="font-size:24px;font-weight:700;color:${s.c};font-family:'DM Mono',monospace">${s.v}</div><div style="font-size:11px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:.07em;margin-top:2px">${s.l}</div></div>`).join("")}
     </div>
     ${wdStats.filter(d=>d.total>0).length>0?`<div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1.25rem;margin-bottom:1.5rem"><h3 style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:12px">Warmup Domains</h3>${wdStats.filter(d=>d.total>0).map(d=>`<div style="display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:0.5px solid var(--border)"><div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:600;color:#fff;font-family:'DM Mono',monospace">${d.d}</div><div style="font-size:11px;color:var(--text3)">${d.total} inboxes · ${d.active} in campaigns · ${d.warmup} warming up</div></div><div style="width:150px">${inboxProgBar(d.active,d.total,"var(--accent)")}</div></div>`).join("")}</div>`:""}
-    ${conflicts.length>0?`<div style="background:var(--bg2);border:1px solid rgba(239,68,68,0.35);border-radius:var(--radius-lg);padding:1.25rem;position:relative;overflow:hidden"><div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,#fca5a5,#f87171)"></div><h3 style="font-size:11px;font-weight:700;color:#fca5a5;text-transform:uppercase;letter-spacing:.1em;margin-bottom:12px">⚠ Dual-Campaign Conflicts (${conflicts.length})</h3>${conflicts.map(r=>`<div style="display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:0.5px solid rgba(239,68,68,0.15)"><div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:600;color:#fff;font-family:'DM Mono',monospace">${r.e}</div></div><div style="display:flex;gap:4px;flex-wrap:wrap">${(r.v||[]).map(c=>{const ci=CAMPS[c];return ci?`<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;background:${ci.bg};color:${ci.tx}">${ci.name}</span>`:""}).join("")}</div><a href="https://app.instantly.ai" target="_blank" style="font-family:'DM Sans',sans-serif;font-size:11px;padding:4px 10px;border-radius:6px;border:0.5px solid rgba(239,68,68,0.4);background:rgba(239,68,68,0.08);color:#fca5a5;cursor:pointer;white-space:nowrap;flex-shrink:0;text-decoration:none">Fix in Instantly →</a></div>`).join("")}</div>`:""}`;
+    ${conflicts.length>0?`<div style="background:var(--bg2);border:1px solid rgba(239,68,68,0.35);border-radius:var(--radius-lg);padding:1.25rem;position:relative;overflow:hidden"><div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,#fca5a5,#f87171)"></div><h3 style="font-size:11px;font-weight:700;color:#fca5a5;text-transform:uppercase;letter-spacing:.1em;margin-bottom:12px">⚠ Dual-Campaign Conflicts (${conflicts.length})</h3>${conflicts.map(r=>`<div style="display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:0.5px solid rgba(239,68,68,0.15)"><div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:600;color:#fff;font-family:'DM Mono',monospace">${r.e}</div></div><div style="display:flex;gap:4px;flex-wrap:wrap">${(r.v||[]).filter(c=>CAMPS[c]?.active!==false&&CAMPS[c]).map(c=>{const ci=CAMPS[c];return`<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;background:${ci.bg};color:${ci.tx}">${ci.name}</span>`;}).join("")}</div><a href="https://app.instantly.ai" target="_blank" style="font-family:'DM Sans',sans-serif;font-size:11px;padding:4px 10px;border-radius:6px;border:0.5px solid rgba(239,68,68,0.4);background:rgba(239,68,68,0.08);color:#fca5a5;cursor:pointer;white-space:nowrap;flex-shrink:0;text-decoration:none">Fix in Instantly →</a></div>`).join("")}</div>`:""}`;
     return;
   }
 
