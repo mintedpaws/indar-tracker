@@ -1046,15 +1046,17 @@ function renderInboxTable(rows,CAMPS){
   CAMPS=CAMPS||iActiveCamps();
   const stColors={active:"#86efac",warmup:"#fcd34d",available:"var(--text3)",conflict:"#fca5a5"};
   const stBgs={active:"rgba(34,197,94,0.06)",warmup:"rgba(252,211,77,0.06)",available:"transparent",conflict:"rgba(239,68,68,0.08)"};
-  const sortArrow=(k)=>{if(inboxSk!==k)return'<span style="opacity:.3">↕</span>';return`<span style="opacity:1">${inboxSd==="asc"?"↑":"↓"}</span>`;};
+  const thBase="padding:10px 14px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;border-bottom:1px solid var(--border2);cursor:pointer;user-select:none;transition:background .15s,color .15s;position:sticky;top:0;z-index:2";
+  const thActive=(k)=>inboxSk===k?"background:rgba(192,96,255,0.12);color:#e090ff":"background:var(--bg3);color:var(--text3)";
+  const sortArrow=(k)=>{if(inboxSk!==k)return'<span style="opacity:.25;font-size:10px"> ↕</span>';return`<span style="font-size:10px;color:#e090ff"> ${inboxSd==="asc"?"↑":"↓"}</span>`;};
   return`<div style="border:1px solid var(--border);border-radius:var(--radius-lg);overflow:auto">
     <table style="width:100%;border-collapse:collapse;min-width:580px">
-      <thead><tr style="background:var(--bg3)">
-        <th onclick="inboxDoSort('e')" style="padding:8px 14px;text-align:left;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;border-bottom:1px solid var(--border2);cursor:pointer">Email ${sortArrow('e')}</th>
-        <th onclick="inboxDoSort('c')" style="padding:8px 12px;text-align:left;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;border-bottom:1px solid var(--border2);cursor:pointer;width:110px">Cap/Day ${sortArrow('c')}</th>
-        <th onclick="inboxDoSort('w')" style="padding:8px 12px;text-align:left;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;border-bottom:1px solid var(--border2);cursor:pointer;width:110px">Warmup ${sortArrow('w')}</th>
-        <th onclick="inboxDoSort('h')" style="padding:8px 12px;text-align:left;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;border-bottom:1px solid var(--border2);cursor:pointer;width:110px">Health ${sortArrow('h')}</th>
-        <th style="padding:8px 14px;text-align:left;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;border-bottom:1px solid var(--border2)">Campaigns</th>
+      <thead><tr>
+        <th onclick="inboxDoSort('e')" onmouseover="this.style.background='rgba(192,96,255,0.08)'" onmouseout="this.style.background='${inboxSk==='e'?'rgba(192,96,255,0.12)':'var(--bg3)'}'" style="${thBase};${thActive('e')}">Email ${sortArrow('e')}</th>
+        <th onclick="inboxDoSort('c')" onmouseover="this.style.background='rgba(192,96,255,0.08)'" onmouseout="this.style.background='${inboxSk==='c'?'rgba(192,96,255,0.12)':'var(--bg3)'}'" style="${thBase};${thActive('c')};width:110px">Cap/Day ${sortArrow('c')}</th>
+        <th onclick="inboxDoSort('w')" onmouseover="this.style.background='rgba(192,96,255,0.08)'" onmouseout="this.style.background='${inboxSk==='w'?'rgba(192,96,255,0.12)':'var(--bg3)'}'" style="${thBase};${thActive('w')};width:110px">Warmup ${sortArrow('w')}</th>
+        <th onclick="inboxDoSort('h')" onmouseover="this.style.background='rgba(192,96,255,0.08)'" onmouseout="this.style.background='${inboxSk==='h'?'rgba(192,96,255,0.12)':'var(--bg3)'}'" style="${thBase};${thActive('h')};width:110px">Health ${sortArrow('h')}</th>
+        <th style="padding:10px 14px;text-align:left;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;border-bottom:1px solid var(--border2);background:var(--bg3);position:sticky;top:0;z-index:2">Campaigns</th>
       </tr></thead>
       <tbody>${rows.map(r=>{
         const st=getInboxSt(r);
