@@ -290,6 +290,7 @@ tr:hover td{background:rgba(192,96,255,0.07)!important}
                 <option value="filter_samples_sent">Show: Samples Sent</option>
               </optgroup>
             </select>
+            <button onclick="exportLeads()" class="btn btn-sm" style="border-color:rgba(134,239,172,0.4);color:#86efac;background:rgba(34,197,94,0.08);font-weight:600;white-space:nowrap">↓ Export CSV</button>
           </div>
         </div>
         <div class="rep-pills" id="rep-pills"></div>
@@ -1231,6 +1232,67 @@ function exportInboxes(mode){
   document.body.appendChild(a);a.click();
   setTimeout(()=>{document.body.removeChild(a);URL.revokeObjectURL(url);},200);
   showToast("Exported "+rows.length+" inboxes",false,true);
+}
+
+
+// ---- LEAD EXPORT ----
+function exportLeads(){
+  // Export whatever is currently filtered/visible in list view
+  const sortKey=document.getElementById("sort-select")?.value||"followup";
+  const stageFilter=sortKey.startsWith("filter_")?sortKey.replace("filter_",""):null;
+  let fil=leads.filter(l=>{
+    const ms=!searchQ||[l.firstName,l.lastName,l.company,l.email,l.vertical,l.rep].some(f=>f?.toLowerCase().includes(searchQ));
+    if(!ms)return false;
+    if(filterRep&&l.rep!==filterRep)return false;
+    if(listDateStart){const d=l.lead_date||l.dateAdded||"";if(!d)return false;const ts=parseDate(d);if(ts<parseDate(listDateStart)||ts>parseDate((listDateEnd||today())+"T23:59:59"))return false;}
+    if(stageFilter)return l.status===stageFilter;
+    if(filterStatus==="all")return true;
+    if(filterStatus==="overdue")return l.followup&&parseDate(l.followup)<parseDate(today())&&l.status!=="dead";
+    if(filterStatus==="has_invoices")return(l.invoices||[]).length>0;
+    return l.status===filterStatus;
+  });
+
+  const headers=["Company","First Name","Last Name","Email","Phone","Title","Vertical","Rep","Stage","Lead Date","Last Contact","Follow-up Date","Closed Date","Deal Notes","Total Invoiced ($)","Invoice Count","Total Estimated ($)","Estimate Count","Date Added"];
+  const csvRows=[headers];
+
+  fil.forEach(l=>{
+    const sc=STATUS_CFG[l.status]||STATUS_CFG.new;
+    const totalInv=(l.invoices||[]).reduce((s,i)=>s+(parseFloat(i.amount)||0),0);
+    const totalEst=(l.estimates||[]).reduce((s,e)=>s+(parseFloat(e.amount)||0),0);
+    const lastNote=(l.activity||[]).filter(a=>a.type==="note"||a.type==="contact").slice(-1)[0];
+    csvRows.push([
+      l.company||"",
+      l.firstName||"",
+      l.lastName||"",
+      l.email||"",
+      l.phone||"",
+      l.title||"",
+      l.vertical||"",
+      l.rep||"",
+      sc.label,
+      l.lead_date?fmtDate(l.lead_date):"",
+      l.last_contact_date?fmtDate(l.last_contact_date):"",
+      l.followup?fmtDate(l.followup):"",
+      l.closed_date?fmtDate(l.closed_date):"",
+      l.deal_notes||"",
+      totalInv||"",
+      (l.invoices||[]).length||"",
+      totalEst||"",
+      (l.estimates||[]).length||"",
+      l.dateAdded?fmtDate(l.dateAdded):""
+    ]);
+  });
+
+  const csv=csvRows.map(row=>row.map(v=>{const s=String(v==null?"":v).replace(/\r?\n/g," ");return(s.includes(",")||s.includes('"'))?'"'+s.replace(/"/g,'""')+'"':s;}).join(",")).join("\n");
+  const blob=new Blob([csv],{type:"text/csv;charset=utf-8;"});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a");
+  const ts=new Date().toISOString().slice(0,10);
+  const label=filterStatus!=="all"?(filterStatus.replace(/_/g,"-")+"-"):""+(filterRep?filterRep.toLowerCase().replace(/\s/g,"-")+"-":"");
+  a.href=url;a.download="leads-"+label+ts+".csv";
+  document.body.appendChild(a);a.click();
+  setTimeout(()=>{document.body.removeChild(a);URL.revokeObjectURL(url);},200);
+  showToast("Exported "+fil.length+" lead"+(fil.length!==1?"s":""),false,true);
 }
 
 </script>
