@@ -1189,6 +1189,8 @@ function renderInboxes(){
     <h2 style="font-size:20px;font-weight:700;color:#fff">📧 All Inboxes</h2>
     <div style="display:flex;align-items:center;gap:8px">
       <span style="font-size:12px;color:var(--text3);font-family:'DM Mono',monospace">${filtered.length} of ${DATA.length}</span>
+      <button onclick="exportInboxes('current')" style="font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;padding:6px 14px;border-radius:8px;border:0.5px solid rgba(134,239,172,0.35);background:rgba(34,197,94,0.08);color:#86efac;cursor:pointer;display:inline-flex;align-items:center;gap:6px">↓ Export view</button>
+      <button onclick="exportInboxes('all')" style="font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;padding:6px 14px;border-radius:8px;border:0.5px solid var(--border2);background:transparent;color:var(--text3);cursor:pointer;display:inline-flex;align-items:center;gap:6px">↓ Export all</button>
       ${instantlyKey?`<a href="https://app.instantly.ai" target="_blank" style="font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;padding:6px 14px;border-radius:8px;border:0.5px solid rgba(125,211,252,0.3);background:rgba(125,211,252,0.08);color:#7dd3fc;text-decoration:none">Manage in Instantly ↗</a>`:""}
     </div>
   </div>
@@ -1205,6 +1207,32 @@ function renderInboxes(){
   </div>
   ${filtered.length===0?`<div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:3rem;text-align:center"><p style="font-size:13px;color:var(--text3)">No inboxes match your filters.</p></div>`:renderInboxTable(filtered,CAMPS)}`;
 }
+
+// ---- INBOX EXPORT ----
+function exportInboxes(mode){
+  const CAMPS=iActiveCamps();
+  const DATA=iActiveData();
+  const rows=mode==="all"?DATA:getFilteredInboxes(DATA);
+  const headers=["Email","Status","Cap/Day","Warmup Score","Health %","Campaigns (Live)","Campaigns (All)","Domain"];
+  const csvRows=[headers];
+  rows.forEach(r=>{
+    const st=getInboxSt(r);
+    const liveCamps=(r.v||[]).filter(c=>CAMPS[c]?.active!==false&&CAMPS[c]).map(c=>CAMPS[c].name).join(" | ");
+    const allCamps=(r.v||[]).map(c=>CAMPS[c]?.name||c).join(" | ");
+    const domain=r.e.split("@")[1]||"";
+    csvRows.push([r.e,st.toUpperCase(),r.c,r.w,r.h+"%",liveCamps||"none",allCamps||"none",domain]);
+  });
+  const csv=csvRows.map(row=>row.map(v=>{const s=String(v==null?"":v);return(s.includes(",")||s.includes('"'))?'"'+s.replace(/"/g,'""')+'"':s;}).join(",")).join("\n");
+  const blob=new Blob([csv],{type:"text/csv;charset=utf-8;"});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a");
+  const ts=new Date().toISOString().slice(0,10);
+  a.href=url;a.download="inboxes-"+mode+"-"+ts+".csv";
+  document.body.appendChild(a);a.click();
+  setTimeout(()=>{document.body.removeChild(a);URL.revokeObjectURL(url);},200);
+  showToast("Exported "+rows.length+" inboxes",false,true);
+}
+
 </script>
 </body>
 </html>
